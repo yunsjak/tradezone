@@ -101,7 +101,8 @@ td textarea:focus::placeholder {
    margin: 30px;   
 }
 
-.submit-btn button {
+.submit-btn button,
+.delete-btn button {
    padding: 8px 16px;
    border: 1px solid #aaa;
    border-radius: 3px;
@@ -112,6 +113,20 @@ td textarea:focus::placeholder {
    margin: 0 10px;
 }
 
-.submit-btn button:hover {
+/* 버튼 호버 시 스타일 */
+.submit-btn button:hover,
+.delete-btn button:hover {
     background-color: #f7f7f7;
+    color: white;
 }
+
+/* 삭제 버튼 스타일 */
+.delete-btn button {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+}
+/* 
+.delete-btn button:hover {
+    background-color: #c82333;
+} */

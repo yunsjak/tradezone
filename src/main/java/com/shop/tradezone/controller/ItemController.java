@@ -27,7 +27,6 @@ import com.shop.tradezone.dto.ItemUpdateDto;
 import com.shop.tradezone.dto.ReviewFormDto;
 import com.shop.tradezone.entity.Category;
 import com.shop.tradezone.entity.Item;
-import com.shop.tradezone.entity.Review;
 import com.shop.tradezone.repository.ItemRepository;
 import com.shop.tradezone.service.CategoryService;
 import com.shop.tradezone.service.ItemService;
@@ -37,9 +36,11 @@ import com.shop.tradezone.service.ReviewService;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
+@Log4j2
 @Controller
 @RequiredArgsConstructor
 @RequestMapping("/items")
@@ -109,13 +110,10 @@ public class ItemController {
 		Item item = itemRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("상품이 존재하지 않습니다."));
 
 		// 4) 기존 서비스 메서드로 리뷰 리스트 조회
-		List<Review> reviews = reviewService.getByItem(item);
-
-		// 5) Review -> ReviewFormDto 변환
-		List<ReviewFormDto> reviewDtos = reviews.stream().map(ReviewFormDto::new).toList();
+		List<ReviewFormDto> reviews = reviewService.getByItem(item);
 
 		// 6) 모델에 리뷰 목록 추가
-		model.addAttribute("reviews", reviewDtos);
+		model.addAttribute("reviews", reviews);
 
 		// 7) 빈 리뷰 작성 폼 객체 바인딩
 		model.addAttribute("reviewForm", new ReviewFormDto());
@@ -202,10 +200,19 @@ public class ItemController {
 		Long childId = updateDto.getChildCategoryId();
 		Long parentId = categoryService.getParentIdByChildId(childId);
 
+		// 부모 카테고리(teams)와 자식 카테고리(품목)를 분리하여 모델에 전달
+		List<Category> parents = categoryService.findParentCategoriesWithChildren();
+		Long defaultParentId = parents.isEmpty() ? null : parents.get(0).getId();
+		List<Category> children = defaultParentId == null ? List.of()
+				: categoryService.findChildrenByParentId(defaultParentId);
+		model.addAttribute("parents", parents); // 부모 카테고리 목록
+		model.addAttribute("children", children); // 자식 카테고리 목록
+
+		model.addAttribute("id", id);
 		model.addAttribute("itemUpdateDto", updateDto);
 		model.addAttribute("categoryTree", categoryService.getCategoryTree());
-		model.addAttribute("selectedParentId", parentId);
-		model.addAttribute("selectedChildId", childId);
+		model.addAttribute("selectedParentName", parentId);
+		model.addAttribute("selectedChildName", childId);
 
 		return "admin/item_form"; // 동일한 공통 폼 뷰 사용
 	}
@@ -216,6 +223,8 @@ public class ItemController {
 	public String updateItem(@AuthenticationPrincipal MemberPrincipal memberPrincipal, @PathVariable("id") Long id,
 			@Valid @ModelAttribute ItemUpdateDto updateDto, BindingResult bindingResult, Model model)
 			throws IOException {
+		log.info("자식" + updateDto.getChildCategoryId());
+		log.info("부모" + updateDto.getParentCategoryId());
 
 		Long memberId = memberPrincipal.getMemberId();
 		Collection<? extends GrantedAuthority> authorities = memberPrincipal.getAuthorities();

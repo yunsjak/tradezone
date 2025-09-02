@@ -3,6 +3,7 @@ package com.shop.tradezone.dto;
 import java.time.LocalDateTime;
 
 import com.shop.tradezone.entity.Item;
+import com.shop.tradezone.entity.Member;
 import com.shop.tradezone.entity.Review;
 
 import jakarta.validation.constraints.NotBlank;
@@ -31,13 +32,14 @@ public class ReviewFormDto {
 	private LocalDateTime created;
 
 	public ReviewFormDto(Review review) {
-
 		Item item = review.getItem();
+		Member member = review.getMember();
 
 		this.itemId = item.getId();
 		this.itemName = item.getName();
 		this.content = review.getContent();
-		this.created = item.getCreated();
+		this.created = review.getCreated();
+		this.username = member.getUsername();
 	}
 
 }

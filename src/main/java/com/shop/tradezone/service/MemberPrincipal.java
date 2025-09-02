@@ -21,6 +21,10 @@ public class MemberPrincipal implements UserDetails {
 		return member.getId();
 	}
 
+	public String getEmail() {
+		return member.getEmail(); // 혹은 member.getEmail()
+	}
+
 	@Override
 	public Collection<? extends GrantedAuthority> getAuthorities() {
 		return auth;

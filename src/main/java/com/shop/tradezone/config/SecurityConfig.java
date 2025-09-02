@@ -25,9 +25,10 @@ public class SecurityConfig {
 				.authorizeHttpRequests(auth -> auth
 						.requestMatchers("/", "/member/join", "/member/check-username", "/member/login",
 								"/member/updateidentity", "/member/resetpassword", "/**", "/notice/**", "/css/**",
-								"/js/**", "/images/**", "/api/items/main", "/callback", "/reviews/**")
+								"/js/**", "/images/**", "/api/items/main", "/callback", "/member/passwordcode", "/**")
 						.permitAll().requestMatchers("/admin/**").hasRole("ADMIN")
-						.requestMatchers("/member/**", "/register/**", "/chat/**", "/callback", "/items/new")
+						.requestMatchers("/member/**", "/register/**", "/chat/**", "/callback", "/items/**",
+								"/reviews/**")
 						.hasAnyRole("USER", "ADMIN").anyRequest().authenticated())
 				// 로그인 설정
 				.formLogin(formLogin -> formLogin.loginPage("/member/login").loginProcessingUrl("/member/login")
@@ -37,7 +38,7 @@ public class SecurityConfig {
 				.logout(logout -> logout.logoutRequestMatcher(new AntPathRequestMatcher("/member/logout"))
 						.logoutSuccessUrl("/").invalidateHttpSession(true));
 		http.csrf(csrf -> csrf.csrfTokenRepository(new HttpSessionCsrfTokenRepository())
-				.ignoringRequestMatchers("/member/updateidentity", "/member/resetpassword"));
+				.ignoringRequestMatchers("/member/updateidentity", "/member/resetpassword", "/member/passwordcode"));
 
 		return http.build();
 	}

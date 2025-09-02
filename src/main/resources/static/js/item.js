@@ -1,9 +1,5 @@
-/**
- * 
- */
-
-// static/js/item.js
 document.addEventListener("DOMContentLoaded", function () {
+    // 💰 가격 입력 포맷팅
     const priceInput = document.getElementById("price");
 
     priceInput.addEventListener("input", function (e) {
@@ -26,21 +22,18 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
-    // 1차 카테고리 변경 시 2차 카테고리 동적 변경
+    // 📂 카테고리 동적 변경
     const parentSelect = document.getElementById("parentCategoryId");
     const childSelect = document.getElementById("childCategoryId");
+    const selectedChildId = childSelect.getAttribute("data-selected-id");
 
-    parentSelect.addEventListener("change", function () {
-        const parentId = this.value;
-
-        // 자식 카테고리 초기화
+    function loadChildren(parentId, selectedId) {
         childSelect.innerHTML = "";
 
-        // AJAX로 자식 카테고리 가져오기
         fetch(`/categories/children?parentId=${parentId}`)
             .then(response => {
                 if (!response.ok) {
-                    throw new Error("네트워크 응답에 문제가 있습니다.");
+                    throw new Error("자식 카테고리 요청 실패");
                 }
                 return response.json();
             })
@@ -49,11 +42,24 @@ document.addEventListener("DOMContentLoaded", function () {
                     const option = document.createElement("option");
                     option.value = child.id;
                     option.textContent = child.name;
+                    if (selectedId && child.id == selectedId) {
+                        option.selected = true;
+                    }
                     childSelect.appendChild(option);
                 });
             })
             .catch(error => {
                 console.error("자식 카테고리 불러오기 오류:", error);
             });
+    }
+
+    // 초기 로딩 시 자식 카테고리 불러오기
+    if (parentSelect && parentSelect.value) {
+        loadChildren(parentSelect.value, selectedChildId);
+    }
+
+    // 부모 카테고리 변경 시 자식 카테고리 갱신
+    parentSelect.addEventListener("change", function () {
+        loadChildren(this.value, null);
     });
 });

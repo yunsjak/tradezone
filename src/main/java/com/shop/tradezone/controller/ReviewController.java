@@ -14,19 +14,23 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import com.shop.tradezone.dto.ReviewFormDto;
 import com.shop.tradezone.entity.Item;
 import com.shop.tradezone.entity.Member;
 import com.shop.tradezone.entity.Review;
 import com.shop.tradezone.repository.ItemRepository;
+import com.shop.tradezone.service.MemberPrincipal;
 import com.shop.tradezone.service.MemberService;
 import com.shop.tradezone.service.ReviewService;
 
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 
+@Log4j2
 @Controller
 @RequiredArgsConstructor
 @RequestMapping("/reviews")
@@ -37,40 +41,24 @@ public class ReviewController {
 	private final ItemRepository itemRepository;
 
 	// 상품 상세페이지에서 리뷰 출력
-	@GetMapping("/item/{itemId}")
-	public String getItemDetail(@PathVariable("itemId") Long itemId, Model model) {
-		Item item = itemRepository.findById(itemId).orElseThrow(() -> new EntityNotFoundException("상품이 존재하지 않습니다."));
-
-		List<Review> reviews = reviewService.getByItem(item);
-
-		// Review → ReviewFormDto 변환
-		List<ReviewFormDto> reviewDtos = reviews.stream().map(ReviewFormDto::new).collect(Collectors.toList());
-
-		model.addAttribute("item", item);
-		model.addAttribute("reviews", reviewDtos);
-		model.addAttribute("reviewForm", new ReviewFormDto());
-
-		return "item"; // 상품 상세 페이지 뷰
-	}
+//	@GetMapping("/item/{itemId}")
+//	public String getItemDetail(@PathVariable("itemId") Long itemId, Model model) {
+//		Item item = itemRepository.findById(itemId).orElseThrow(() -> new EntityNotFoundException("상품이 존재하지 않습니다."));
+//
+//		List<Review> reviews = reviewService.getByItem(item);
+//		model.addAttribute("reviews", reviews);
+//
+//		return "item"; // 상품 상세 페이지 뷰
+//	}
 
 	// 후기 작성
-	@PreAuthorize("isAuthenticated()")
-	@PostMapping("/item/{itemId}/create")
-	public String create(@PathVariable("itemId") Long itemId, @Valid @ModelAttribute("reviewForm") ReviewFormDto form,
-			BindingResult bindingResult, @AuthenticationPrincipal User userPrincipal, Model model) {
-
+	@PostMapping("/item/create")
+	public String create(@RequestParam("itemId") Long itemId, @RequestParam("content") String content,
+			@AuthenticationPrincipal MemberPrincipal memberPrincipal) {
 		Item item = itemRepository.findById(itemId).orElseThrow(() -> new EntityNotFoundException("상품이 존재하지 않습니다."));
+		Member member = memberService.findByEmail(memberPrincipal.getEmail());
 
-		if (bindingResult.hasErrors()) {
-			List<Review> reviews = reviewService.getByItem(item);
-			List<ReviewFormDto> reviewDtos = reviews.stream().map(ReviewFormDto::new).collect(Collectors.toList());
-
-			model.addAttribute("item", item);
-			model.addAttribute("reviews", reviewDtos);
-			return "item"; // 다시 상세 페이지로 되돌리기 (검증 에러 보여줌)
-		}
-		Member member = memberService.findByEmail(userPrincipal.getUsername());
-		reviewService.create(item, member, form.getContent());
+		reviewService.create(item, member, content);
 
 		return "redirect:/items/detail/" + itemId;
 	}

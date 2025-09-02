@@ -13,6 +13,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.shop.tradezone.dto.ReviewFormDto;
 import com.shop.tradezone.entity.Item;
 import com.shop.tradezone.entity.Member;
 import com.shop.tradezone.entity.Review;
@@ -20,7 +21,9 @@ import com.shop.tradezone.repository.ReviewRepository;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 
+@Log4j2
 @Service
 @Transactional
 @RequiredArgsConstructor
@@ -63,8 +66,21 @@ public class ReviewService {
 	}
 
 	@Transactional(readOnly = true)
-	public List<Review> getByItem(Item item) {
-		return reviewRepository.findByItemOrderByCreatedDesc(item);
+	public List<ReviewFormDto> getByItem(Item item) {
+		List<Review> review = reviewRepository.findByItemOrderByCreatedDesc(item);
+		List<ReviewFormDto> dtoList = new ArrayList<ReviewFormDto>();
+
+		for (Review r : review) {
+			ReviewFormDto redto = new ReviewFormDto();
+			redto.setUsername(r.getMember().getUsername());
+			log.info("엔티티 네임 : " + r.getMember().getUsername());// Member가 null일 수 있으니 체크 필요
+			redto.setContent(r.getContent()); // 예시로 content도 넣어봄
+			redto.setCreated(r.getCreated());
+
+			dtoList.add(redto);
+			log.info("여기가 디티오" + redto.getUsername());
+		}
+		return dtoList;
 	}
 
 	@Transactional(readOnly = true)

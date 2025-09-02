@@ -189,11 +189,52 @@ public class ItemService {
 		Category child = item.getCategoryId();
 		Category parent = child.getParent();
 
-		// 상품 정보를 DTO로 변환해 반환
-		return ItemUpdateDto.builder().id(item.getId()).name(item.getName()).description(item.getDescription())
-				.price(item.getPrice()).region(item.getRegion())
-				.parentCategoryId(parent != null ? parent.getId() : null).childCategoryId(child.getId())
-				.imgIds(item.getImages().stream().map(ItemImg::getId).toList()).build();
+//		// 상품 정보를 DTO로 변환해 반환
+
+		ItemUpdateDto dto = new ItemUpdateDto();
+
+		dto.setId(item.getId());
+		dto.setName(item.getName());
+		dto.setDescription(item.getDescription());
+		dto.setPrice(item.getPrice());
+		dto.setRegion(item.getRegion());
+
+		// 카테고리 ID 분리
+		if (item.getCategoryId() != null) {
+			dto.setChildCategoryId(item.getCategoryId().getId());
+			if (item.getCategoryId().getParent() != null) {
+				dto.setParentCategoryId(item.getCategoryId().getParent().getId());
+			}
+		}
+
+		// 이미지 URL과 이미지 ID 매핑
+		List<ItemImg> itemImgs = item.getImages();
+		if (itemImgs != null && !itemImgs.isEmpty()) {
+			StringBuilder urls = new StringBuilder();
+			List<Long> imgIds = new ArrayList<>();
+
+			for (ItemImg img : itemImgs) {
+				if (img.getImgUrl() != null) {
+					urls.append(img.getImgUrl()).append(",");
+				}
+				imgIds.add(img.getId());
+			}
+
+			// 마지막 쉼표 제거
+			if (urls.length() > 0) {
+				urls.setLength(urls.length() - 1);
+			}
+
+			dto.setImageUrls(urls.toString());
+			dto.setImgIds(imgIds);
+		}
+
+		return dto;
+
+//		return ItemUpdateDto.builder().id(item.getId()).name(item.getName()).description(item.getDescription())
+//				.price(item.getPrice()).region(item.getRegion())
+//				.parentCategoryId(parent != null ? parent.getId() : null).childCategoryId(child.getId())
+//				.imgIds(item.getImages().stream().map(ItemImg::getId).toList()).build();
 	}
 
 	// 상품 수정 처리

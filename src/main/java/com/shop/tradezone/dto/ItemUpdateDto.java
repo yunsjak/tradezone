@@ -12,10 +12,12 @@ import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @Builder
 @AllArgsConstructor
+@NoArgsConstructor
 public class ItemUpdateDto {
 
 	private Long id; // 여기서는 null 체크는 하지 않음 (서비스에서 처리)
@@ -37,6 +39,8 @@ public class ItemUpdateDto {
 
 	@NotNull(message = "항목을 선택해주세요.")
 	private Long childCategoryId;
+
+	private String imageUrls;
 
 	private List<Long> imgIds;
 
