@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<head>
+  <meta charset="UTF-8" />
+  <title>채팅 목록</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    /* ========== 기본 색/타이포: chat.html 기준 톤을 맞춤 ========== */
+    :root{
+      --me:#ff7f50;      /* 내가 보낸 말풍선 색 (오렌지) */
+      --other:#f1f3f5;   /* 상대방 말풍선 색 (회색)   */
+      --text:#222;       /* 본문 텍스트               */
+      --muted:#888;      /* 약한 텍스트               */
+      --bg:#fff;         /* 배경                       */
+      --chip:#e9ecef;    /* 칩/배지 배경               */
+      --accent:#ff6600;  /* 강조색 (버튼/탭 등)        */
+    }
+    *{ box-sizing:border-box }
+    body{ margin:0; background:#fafafa; color:var(--text);
+          font:14px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial; }
+
+    /* ========== 레이아웃 ========== */
+    .wrap{
+      width:80%; max-width:1200px; margin:0 auto;
+      padding:12px 0; min-height:calc(100vh - 20px);
+      display:flex; flex-direction:column; gap:12px;
+    }
+    .header{
+      display:flex; align-items:center; gap:10px;
+      padding:12px 16px; background:#fff; border:1px solid #eee; border-radius:12px;
+    }
+    .title{ font-weight:700; font-size:18px; }
+    .sp{ flex:1 }
+    .btn{ padding:8px 12px; border:none; border-radius:10px; background:var(--accent); color:#fff; cursor:pointer; }
+    .btn.ghost{ background:#eee; color:#333; }
+    .chip{ display:inline-block; background:var(--chip); color:#666; padding:4px 10px; border-radius:999px; font-size:12px; }
+
+    /* ========== 검색/필터 ========== */
+    .toolbar{
+      display:flex; align-items:center; gap:8px;
+      padding:10px 12px; background:#fff; border:1px solid #eee; border-radius:12px;
+    }
+    .toolbar input[type="search"]{ flex:1; padding:10px 12px; border:1px solid #ccc; border-radius:8px; }
+    .tabs{ display:flex; gap:8px; }
+    .tab{ padding:6px 10px; border-radius:999px; background:#eee; font-size:12px; cursor:pointer; user-select:none; }
+    .tab.active{ background:var(--accent); color:#fff; }
+
+    /* ========== 리스트 ========== */
+    .list{ background:#fff; border:1px solid #eee; border-radius:12px; overflow:hidden; }
+    .row{
+      display:grid; grid-template-columns: 56px 1fr auto; gap:12px;
+      padding:12px 14px; border-top:1px solid #f2f2f2; align-items:center;
+    }
+    .row:first-child{ border-top:none; }
+    .avatar{
+      width:56px; height:56px; border-radius:12px; background:#ddd;
+      display:flex; align-items:center; justify-content:center; font-weight:700;
+    }
+    .main{ display:flex; flex-direction:column; gap:4px; min-width:0; }
+    .line1{ display:flex; align-items:center; gap:8px; min-width:0; }
+    .name{ font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .tags{ display:flex; gap:6px; flex-wrap:wrap; }
+    .tag{ background:#f4f4f4; color:#555; border-radius:6px; padding:2px 6px; font-size:11px; }
+    .line2{ display:flex; gap:8px; color:#666; font-size:13px; min-width:0; }
+    .last{ flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .count{ background:#ff3b30; color:#fff; font-weight:700; font-size:11px; padding:2px 6px; border-radius:999px; }
+    .time{ color:#999; font-size:12px; }
+    .go{ display:flex; flex-direction:column; align-items:flex-end; gap:8px; }
+    .enter{ padding:8px 12px; border:none; border-radius:10px; background:var(--accent); color:#fff; cursor:pointer; }
+    .enter.ghost{ background:#eee; color:#333; }
+
+    /* ========== 빈 상태 ========== */
+    .empty{ padding:40px; text-align:center; color:#777; }
+  </style>
+</head>
+
+<body>
+  <!-- ✅ layout.html의 content 프래그먼트에 주입 -->
+  <div layout:fragment="content">
+    <div class="wrap">
+      <!-- 상단 헤더 -->
+      <div class="header">
+        <div class="title">채팅 목록</div>
+        <span class="chip" id="totalChip">총 0개</span>
+        <div class="sp"></div>
+        <button class="btn ghost" onclick="location.href='/'">← 홈</button>
+        <button class="btn" onclick="location.href='/chat?roomId=1'">새 채팅</button>
+      </div>
+
+      <!-- 검색/필터 바 -->
+      <div class="toolbar">
+        <input id="q" type="search" placeholder="상대방/상품명/팀으로 검색" />
+        <div class="tabs">
+          <div class="tab active" data-filter="all">전체</div>
+          <div class="tab" data-filter="progress">거래중</div>
+          <div class="tab" data-filter="done">거래완료</div>
+          <div class="tab" data-filter="ended">종료</div>
+        </div>
+      </div>
+
+      <!-- 목록 -->
+      <div id="list" class="list">
+        <!-- 서버 사용 시: th:each="room : ${rooms}" 로 교체 -->
+      </div>
+
+      <div id="empty" class="empty" style="display:none">채팅이 없습니다.</div>
+    </div>
+  </div>
+
+  <!-- ✅ layout.html의 script 프래그먼트에 주입 -->
+  <th:block layout:fragment="script">
+    <script>
+      // ===== 더미 데이터 (※ 테스트용 - 나중에 수정 필요)
+      const DUMMY = [
+        { id:1, partner:'김트윈',   team:'LG',   last:'내일 직거래 가능하세요?',            unread:2, time:'15:42', status:'progress', tags:['유니폼','L 사이즈'] },
+        { id:2, partner:'박자이언츠', team:'롯데', last:'택배비 포함 가격 다시 말씀드립니다.', unread:0, time:'어제',  status:'done',     tags:['모자','S/M'] },
+        { id:3, partner:'한이글',   team:'한화', last:'네, 예약 완료했습니다.',              unread:5, time:'8/22',  status:'progress', tags:['응원봉'] },
+        { id:4, partner:'이타이거즈', team:'KIA',  last:'종료 처리 부탁드려요.',              unread:0, time:'8/20',  status:'ended',    tags:['야구공','사인'] }
+      ];
+
+      const $  = s => document.querySelector(s);
+      const $$ = s => Array.from(document.querySelectorAll(s));
+
+      // 리스트 렌더링
+      function render(items){
+        const list = $('#list');
+        list.innerHTML = '';
+        if (!items.length){
+          $('#empty').style.display = 'block';
+          $('#totalChip').textContent = '총 0개';
+          return;
+        }
+        $('#empty').style.display = 'none';
+        $('#totalChip').textContent = '총 ' + items.length + '개';
+
+        for (const r of items){
+          const row = document.createElement('div');
+          row.className = 'row';
+
+          const avatar = document.createElement('div');
+          avatar.className = 'avatar';
+          avatar.textContent = (r.team||'?').slice(0,2);
+
+          const main = document.createElement('div');
+          main.className = 'main';
+
+          const line1 = document.createElement('div');
+          line1.className = 'line1';
+          const name = document.createElement('div');
+          name.className = 'name';
+          name.textContent = r.partner + ' · ' + r.team;
+          const tags = document.createElement('div');
+          tags.className = 'tags';
+          (r.tags||[]).forEach(t => {
+            const el = document.createElement('span');
+            el.className = 'tag';
+            el.textContent = t;
+            tags.append(el);
+          });
+          line1.append(name, tags);
+
+          const line2 = document.createElement('div');
+          line2.className = 'line2';
+          const last = document.createElement('div');
+          last.className = 'last';
+          last.textContent = r.last;
+          const time = document.createElement('div');
+          time.className = 'time';
+          time.textContent = r.time;
+          line2.append(last, time);
+
+          main.append(line1, line2);
+
+          const go = document.createElement('div');
+          go.className = 'go';
+          if (r.unread>0){
+            const c = document.createElement('div');
+            c.className = 'count';
+            c.textContent = r.unread;
+            go.append(c);
+          }
+          const btn = document.createElement('button');
+          btn.className = 'enter';
+          btn.textContent = '입장';
+          btn.addEventListener('click', () => location.href = '/chat?roomId=' + r.id);
+          go.append(btn);
+
+          row.append(avatar, main, go);
+          list.append(row);
+        }
+      }
+
+      // 검색/탭 필터 적용
+      function applyFilter(){
+        const active = $('.tab.active')?.dataset.filter || 'all';
+        const q = $('#q').value.trim();
+        const normalized = (s) => (s+'').toLowerCase();
+        let items = DUMMY.slice(); // ※ 테스트용 - 나중에 서버 데이터로 교체
+
+        if (active !== 'all'){
+          items = items.filter(x => x.status === active);
+        }
+        if (q){
+          items = items.filter(x =>
+            normalized(x.partner).includes(normalized(q)) ||
+            normalized(x.team).includes(normalized(q)) ||
+            normalized((x.tags||[]).join(',')).includes(normalized(q)) ||
+            normalized(x.last).includes(normalized(q))
+          );
+        }
+        render(items);
+      }
+
+      // 이벤트 바인딩
+      $$('.tab').forEach(el => {
+        el.addEventListener('click', () => {
+          $$('.tab').forEach(t => t.classList.remove('active'));
+          el.classList.add('active');
+          applyFilter();
+        });
+      });
+      $('#q').addEventListener('input', applyFilter);
+
+      // 초기 렌더
+      render(DUMMY);
+    </script>
+  </th:block>
+</body>
+</html>

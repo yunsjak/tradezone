@@ -1,0 +1,63 @@
+@charset "UTF-8";
+
+.py-5 {
+	width: 95%;
+	display: flex;
+	align-items: center;
+	flex-direction: column;
+	margin: 0 auto;
+}
+
+.page {
+    text-align: center;
+}
+      
+.page-button {
+    display: inline-flex;
+    gap: 6px;
+    margin-top: 10px;
+}
+
+.page button {
+    padding: 6px 12px;
+    border: 1px solid #ccc;
+    background-color: white;
+    cursor: pointer;
+}
+
+.page .active {
+    background-color: #eee;
+    font-weight: bold;
+}
+
+.subject {
+	max-width: 90%;
+	font-size: 25px;
+	font-weight: bold;
+	margin-top: 40px;
+	margin-left: 70px;
+}
+
+.card-body p {
+	font-size: 18px;
+	white-space: pre-wrap;
+	margin-bottom: 10px;
+}
+
+a:hover .card {
+    box-shadow: 0 0 5px rgba(0,0,0,0.2);
+    transform: scale(1.02);
+    transition: 0.2s ease;
+}
+
+.card-body {
+	height: 10px;
+}
+
+.card img {
+	height: 60%;
+}
+
+.card {
+	padding: 20px 7px;
+}

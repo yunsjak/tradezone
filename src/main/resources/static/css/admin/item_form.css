@@ -1,0 +1,117 @@
+@charset "UTF-8";
+
+body {
+   margin: 0;
+   font-family: 'Noto Sans KR', sans-serif;
+}
+
+.admin_item {
+   width: 100%;
+   display: flex;
+     flex-direction: column;
+     align-items: center;
+     margin: 40px;
+}
+
+h2 {
+   width: 80%;
+   font-size: 20px;
+   margin: 10px auto;
+   padding-bottom: 10px;
+}
+
+table {
+   width: 80%;
+   max-width: 1000px;
+   border-collapse: collapse;
+    margin: 0 auto;
+}
+
+tr {
+   border-bottom: 1px solid #ccc;
+}
+
+td {
+   padding: 20px 10px;
+   vertical-align: top;
+}
+
+td label {
+   display: inline-block;
+   width: 100px;
+   font-weight: bold;
+   padding-top: 8px;
+}
+
+td input[type="text"],
+td button[type="submit"]
+td textarea,
+td select {
+   width: 100%;
+   max-width: 700px;
+   padding: 10px;
+   font-size: 14px;
+   border: 1px solid #ccc;
+   border-radius: 4px;
+   box-sizing: border-box;
+   font-family: 'Noto Sans KR', sans-serif;
+   outline: none;
+}
+
+td input:focus::placeholder,
+td textarea:focus::placeholder {
+  color:transparent;
+}
+
+.image-upload-box {
+   width: 150px;
+   height: 150px;
+   border: 1px solid #ccc;
+   display: inline-block;
+   align-items: center;
+   justify-content: center;
+   color: #888;
+   cursor: pointer;
+   text-align: center;
+   background-color: #ededed;
+}
+
+#price-input {
+   max-width: 300px;
+   width: 100%;
+   margin-right: 10px;
+}
+
+#region {
+   display: flex;
+   max-width: 300px;
+}
+
+.category-select {
+   display: flex;
+   gap: 20px;
+}
+
+.category-select select {
+   width: 250px;
+}
+
+.submit-btn {
+   text-align: center;
+   margin: 30px;   
+}
+
+.submit-btn button {
+   padding: 8px 16px;
+   border: 1px solid #aaa;
+   border-radius: 3px;
+   background-color: #eee;
+   color: #757575;
+   font-size: 14px;
+   cursor: pointer;
+   margin: 0 10px;
+}
+
+.submit-btn button:hover {
+    background-color: #f7f7f7;
+}

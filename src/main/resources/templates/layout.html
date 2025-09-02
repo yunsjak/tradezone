@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+	
+	<link rel="stylesheet" type="text/css" th:href="@{/css/common/footer.css}" />
+	<link rel="stylesheet" type="text/css" th:href="@{/css/common/navbar.css}" />
+	<link rel="stylesheet" type="text/css" th:href="@{/css/common/styles.css}" />
+	<script src="https://kit.fontawesome.com/bdb1f83345.js" crossorigin="anonymous"></script>
+	<title>tradeZone</title>
+	
+</head>
+<body>
+	<th:block th:replace="~{navbar :: headerFragment}"></th:block>
+
+	<th:block layout:fragment="content"></th:block>
+	
+	<th:block th:replace="~{footer :: footerFragment}"></th:block>
+	
+	<th:block layout:fragment="script"></th:block>
+</body>
+</html>

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html layout:decorate="~{admin/common}">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" type="text/css" th:href="@{/css/admin/admin_list.css}" />
+</head>
+<body>
+	<div layout:fragment="content">
+		<h1>회원 관리</h1>
+		<div class="container-2">
+			<table>
+				<thead>
+					<tr>
+						<th>번호</th>
+						<th>닉네임(이름)</th>
+						<th>이메일</th>
+						<th>등록일</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr th:each="member : ${members}">
+						<td th:text="${member.id}"></td>
+						<td><a th:href="@{/admin/users/edit/{id}(id=${member.id})}" th:text="${member.username}"></a></td>
+						<td th:text="${member.email}"></td>
+						<td th:text="${#temporals.format(member.created, 'yyyy-MM-dd')}"></td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+		<div th:if="${members != null}" class="pagination">
+			<div class="pagination-button">
+				<button th:if="${members.hasPrevious()}" th:onclick="'location.href=\'/members?page=' + (paging.number - 1) + '\''">Previous</button>
+
+				<!-- 이전 페이지 없으면 버튼 비활성화 -->
+				<button th:unless="${members.hasPrevious()}" disabled>Previous</button>
+
+				<span th:text="${members.number + 1}"></span>
+
+				<button th:if="${members.hasNext()}" th:onclick="'location.href=\'/members?page=' + (paging.number + 1) + '\''">Next</button>
+
+				<!-- 다음 페이지 없으면 버튼 비활성화 -->
+				<button th:unless="${members.hasNext()}" disabled>Next</button>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<head>
+<meta charset="UTF-8" />
+<title>채팅</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<!-- ★ CSRF: Spring Security 사용 시 필수 -->
+<meta name="_csrf" th:content="${_csrf.token}" />
+<meta name="_csrf_header" th:content="${_csrf.headerName}" />
+
+<style>
+  :root{ --me:#ff7f50; --other:#f1f3f5; --text:#222; --muted:#888; --bg:#fff; --chip:#e9ecef; --accent:#ff6600; }
+  *{box-sizing:border-box}
+  body{margin:0;background:#fafafa;color:var(--text);font:14px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial}
+  .wrap{width:80%;max-width:1200px;margin:0 auto;display:flex;flex-direction:column;height:calc(100vh - 20px)}
+  header{padding:12px 16px;border-bottom:1px solid #eee;display:flex;gap:8px;align-items:center;background:#fff;position:sticky;top:0;z-index:10}
+  header .title{font-weight:700}
+  header .sp{flex:1}
+  header .btn{padding:6px 10px;border:none;border-radius:8px;background:var(--accent);color:#fff;cursor:pointer}
+  header .btn.ghost{background:#eee;color:#333}
+  header .btn:disabled{opacity:.6;cursor:not-allowed}
+  header .status{color:#999;font-size:12px;margin-left:6px}
+  .chip{display:inline-block;background:var(--chip);color:#666;padding:4px 10px;border-radius:999px;font-size:12px;margin-left:8px}
+  .scroll{flex:1;overflow:auto;padding:12px;background:#fafafa}
+  .center{text-align:center}
+  .row{display:flex;gap:8px;margin:6px 0;align-items:flex-end}
+  .row.me{justify-content:flex-end}
+  .row.other{justify-content:flex-start}
+  .avatar{width:28px;height:28px;border-radius:50%;background:#ddd;flex:0 0 28px}
+  .bubble{max-width:75%;padding:10px 12px;border-radius:12px;word-break:break-word}
+  .me .bubble{background:var(--me);color:#fff;border-bottom-right-radius:4px}
+  .other .bubble{background:var(--other);color:#222;border-bottom-left-radius:4px}
+  .meta{font-size:11px;color:#999;white-space:nowrap;margin:0 6px}
+  .composer{border-top:1px solid #eee;padding:10px;background:#fff}
+  .box{display:flex;gap:8px;align-items:center}
+  .box input[type="text"]{flex:1;padding:10px 12px;border:1px solid #ccc;border-radius:6px}
+  .box input[type="text"]:focus{outline:2px solid #ffd4bf}
+  .box .count{font-size:12px;color:#888}
+  .box .send{padding:10px 12px;border:none;border-radius:8px;background:var(--accent);color:#fff;cursor:pointer}
+  .box .send:disabled{opacity:.6;cursor:not-allowed}
+  .hidden{display:none}
+
+  /* ★ 접근성: 모션 최소화 선호 시 부드러운 스크롤 끄기 */
+  @media (prefers-reduced-motion: reduce) {
+    html:focus-within { scroll-behavior: auto; }
+    * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+  }
+</style>
+</head>
+
+<body>
+<div layout:fragment="content">
+  <div class="wrap">
+    <header>
+      <button class="btn ghost" onclick="location.href='/chat/list'">← 목록</button>
+      <div class="title">채팅방</div>
+      <span class="chip">#<span id="roomTxt" th:text="${roomId}">-</span></span>
+      <span class="sp"></span>
+
+      <!-- ★ 거래 상태/버튼: 권한/상태에 따라 노출 제어 -->
+      <span id="tradeChip" class="chip hidden" aria-live="polite"></span>
+      <button id="btnDone" class="btn"
+              th:if="${#authorization.expression('hasRole(''USER'')')}"
+              title="거래완료 요청 또는 확정">거래완료</button>
+      <button id="btnEnd" class="btn ghost"
+              th:if="${#authorization.expression('hasRole(''USER'')')}"
+              title="거래 종료(취소)">거래종료</button>
+
+      <!-- 연결 상태 -->
+      <span class="status" aria-live="polite">WS: <b id="wsStatus">DISCONNECTED</b></span>
+    </header>
+
+    <!-- 메시지 영역 -->
+    <div id="scroll" class="scroll" role="log" aria-live="polite" aria-relevant="additions"></div>
+
+    <!-- 입력창 -->
+    <div class="composer">
+      <div class="box">
+        <input id="message" type="text" placeholder="메시지를 입력하세요..." maxlength="1000" aria-label="메시지 입력" />
+        <span class="count" id="count">0/1000</span>
+        <button id="btnSend" class="send" disabled>전송</button> <!-- ★ 초기 비활성화 -->
+      </div>
+    </div>
+  </div>
+
+  <!-- (선택) 서버에서 tradeId 주입할 때 사용 -->
+  <span id="tradeHolder" th:data-trade-id="${tradeId}" class="hidden"></span>
+</div>
+
+<th:block layout:fragment="script">
+  <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+  <script>
+    // ===== 전역 =====
+    let stomp = null;
+    let CURRENT_ROOM = null;
+    let TRADE_ID = document.getElementById('tradeHolder')?.dataset?.tradeId || null;
+    let MY_ID = null;                 // 필요 시 서버에서 주입
+    const pendingSends = [];          // 내 메시지 판별(임시)
+    const box = document.getElementById('scroll');
+
+    // ★ CSRF
+    const CSRF_TOKEN  = document.querySelector('meta[name="_csrf"]')?.content;
+    const CSRF_HEADER = document.querySelector('meta[name="_csrf_header"]')?.content || 'X-CSRF-TOKEN';
+
+    // ===== 유틸 =====
+    const $ = id => document.getElementById(id);
+    function setWsStatus(ok){ $('wsStatus').textContent = ok ? 'CONNECTED' : 'DISCONNECTED'; }
+    function showTradeChip(text, color){
+      const el = $('tradeChip'); el.textContent = text; el.classList.remove('hidden');
+      if (color) { el.style.background = color; el.style.color = '#fff'; }
+    }
+    function setComposerDisabled(disabled){
+      $('message').disabled = disabled; $('btnSend').disabled = disabled || !$('message').value.trim();
+    }
+    function pad2(n){ return n<10 ? '0'+n : ''+n; }
+    function ensureDateChip(ts){
+      const d = new Date(ts);
+      const key = `chip-${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; // ★ zero-pad
+      if (!document.getElementById(key)){
+        const wrap = document.createElement('div'); wrap.className='center';
+        const chip = document.createElement('div'); chip.id=key; chip.className='chip'; chip.textContent=d.toLocaleDateString('ko-KR');
+        wrap.append(chip); box.append(wrap);
+      }
+    }
+    function isMine(msg){
+      if (MY_ID && msg.senderId === MY_ID) return true;
+      const idx = pendingSends.findIndex(x => x.content === (msg.content||'') && Date.now()-x.ts < 5000);
+      if (idx !== -1){ pendingSends.splice(idx,1); return true; }
+      return false;
+    }
+    function renderMessage(m){
+      ensureDateChip(m.sentAt ? Date.parse(m.sentAt) : Date.now());
+      const mine = isMine(m);
+      const row = document.createElement('div'); row.className='row ' + (mine?'me':'other');
+      if (!mine){ const avatar = document.createElement('div'); avatar.className='avatar'; row.append(avatar); }
+      const bubble = document.createElement('div'); bubble.className='bubble'; bubble.textContent = m.content ?? ''; // textContent로 XSS 방어
+      const meta = document.createElement('div'); meta.className='meta';
+      const t = m.sentAt ? new Date(m.sentAt) : new Date(); meta.textContent = t.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
+      row.append(bubble, meta); box.append(row);
+      // 부드러운 자동 스크롤
+      box.scrollTop = box.scrollHeight;
+    }
+
+    // ===== STOMP 연결 =====
+    let retry = 0; // ★ 재연결 백오프
+    function connect(){
+      if (stomp && stomp.connected) return;
+
+      // 1) roomId
+      const qs = new URLSearchParams(location.search);
+      const rid = qs.get('roomId') || $('roomTxt').textContent;
+      if (!rid){ alert('roomId가 없습니다. /chat?roomId=... 로 접근하세요.'); return; }
+      CURRENT_ROOM = rid;
+
+      // 2) STOMP
+      const sock = new SockJS('/ws-stomp');
+      stomp = Stomp.over(sock);
+      stomp.debug = ()=>{};
+
+      // ★ 하트비트 설정 (ms)
+      stomp.heartbeat = { incoming: 10000, outgoing: 10000 };
+
+      stomp.connect({}, () => {
+        setWsStatus(true);
+        retry = 0; // 성공 시 재시도 카운터 초기화
+
+        // 방 구독
+        stomp.subscribe('/topic/chat.' + CURRENT_ROOM, frame => {
+          const msg = JSON.parse(frame.body);
+
+          // 거래 이벤트
+          if (msg.type === 'TRADE_EVENT'){
+            if (msg.status === 'COMPLETE_REQUESTED'){
+              showTradeChip('거래완료 요청됨(상대 확인 대기)', '#f39c12');
+            } else if (msg.status === 'COMPLETED'){
+              showTradeChip('거래완료', '#2e7d32'); setComposerDisabled(true);
+            } else if (msg.status === 'ENDED'){
+              showTradeChip('거래종료', '#616161'); setComposerDisabled(true);
+            }
+            return;
+          }
+          // 일반 메시지
+          renderMessage(msg);
+        });
+
+        // 입장 시 읽음 처리
+        sendApp(`/app/chat.read.${CURRENT_ROOM}`, {});
+
+        // (선택) 최근 메시지 로드
+        // fetchJson(`/api/chat/rooms/${CURRENT_ROOM}/messages?size=50`).then(arr => arr.forEach(renderMessage));
+      }, onWsCloseOrError);
+    }
+
+    function onWsCloseOrError(){
+      setWsStatus(false);
+      // ★ 지수 백오프 재연결 (최대 30초)
+      const delay = Math.min(30000, 1000 * Math.pow(2, retry++));
+      setTimeout(connect, delay);
+    }
+
+    // ===== 공통 송신 =====
+    function sendApp(dest, payload){
+      if (!stomp || !stomp.connected) return;
+      stomp.send(dest, {}, JSON.stringify(payload || {}));
+    }
+
+    // ===== 메시지 전송 =====
+    let lastSendAt = 0; // ★ 스팸 방지 (짧은 쿨다운)
+    function sendMsg(){
+      if (!stomp || !stomp.connected){ alert('연결되어 있지 않습니다.'); return; }
+      const now = Date.now();
+      if (now - lastSendAt < 200) return; // 200ms 이내 중복 방지
+      lastSendAt = now;
+
+      const input = $('message');
+      const text = (input.value || '').trim();
+      if (!text) return;
+
+      pendingSends.push({content:text, ts:Date.now()});
+      sendApp('/app/chat.send.' + CURRENT_ROOM, { content: text });
+      input.value=''; $('count').textContent = '0/1000';
+      setComposerDisabled(false);
+    }
+
+    // ===== 거래 액션(POST + CSRF) =====
+    async function fetchJson(url, options={}){
+      const opt = { method:'GET', headers:{'Accept':'application/json'}, ...options };
+      if (CSRF_TOKEN && (opt.method || 'GET') !== 'GET'){
+        opt.headers = { ...opt.headers, [CSRF_HEADER]: CSRF_TOKEN };
+      }
+      const res = await fetch(url, opt);
+      if (!res.ok){
+        const txt = await res.text().catch(()=>res.statusText);
+        throw new Error(txt || ('HTTP '+res.status));
+      }
+      const ct = res.headers.get('content-type') || '';
+      return ct.includes('application/json') ? res.json() : res.text();
+    }
+    async function callJson(url){
+      return fetchJson(url, { method:'POST' });
+    }
+    async function onDone(){
+      if (!TRADE_ID){ alert('TRADE_ID가 없습니다. (컨트롤러에서 tradeId 주입 필요)'); return; }
+      try{
+        // 먼저 확정 시도(상대가 요청 보낸 상태면 확정)
+        let ok = true;
+        try{ await callJson(`/api/trades/${TRADE_ID}/complete/confirm`); }
+        catch{ ok = false; }
+        if (!ok){ await callJson(`/api/trades/${TRADE_ID}/complete/request`); }
+      }catch(e){ alert('요청 실패: ' + e.message); }
+    }
+    async function onEnd(){
+      if (!TRADE_ID){ alert('TRADE_ID가 없습니다.'); return; }
+      if (!confirm('정말 거래를 종료(취소)하시겠습니까?')) return;
+      try{ await callJson(`/api/trades/${TRADE_ID}/end`); }
+      catch(e){ alert('요청 실패: ' + e.message); }
+    }
+
+    // ===== 읽음 처리: 가시성/종료 =====
+    function readIfVisible(){
+      if (!document.hidden && CURRENT_ROOM && stomp && stomp.connected){
+        sendApp(`/app/chat.read.${CURRENT_ROOM}`, {});
+      }
+    }
+
+    // ===== 바인딩 & 초기화 =====
+    $('btnSend').addEventListener('click', sendMsg);
+    $('message').addEventListener('keydown', e => { 
+      if (e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendMsg(); }
+    });
+    $('message').addEventListener('input', () => {
+      $('count').textContent = `${$('message').value.length}/1000`;
+      // ★ 입력 없으면 전송 버튼 비활성
+      $('btnSend').disabled = !$('message').value.trim();
+    });
+    const btnDone = $('btnDone'); if (btnDone) btnDone.addEventListener('click', onDone);
+    const btnEnd  = $('btnEnd');  if (btnEnd)  btnEnd.addEventListener('click', onEnd);
+
+    // ★ 가시성 전환 시 읽음 처리
+    document.addEventListener('visibilitychange', readIfVisible);
+    window.addEventListener('beforeunload', readIfVisible);
+
+    // 연결
+    window.addEventListener('load', connect);
+  </script>
+</th:block>
+</body>
+</html>

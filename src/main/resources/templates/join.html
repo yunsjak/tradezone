@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>회원 가입</title>
+<link rel="stylesheet" type="text/css" th:href="@{/css/page/join.css}">
+</head>
+<body>
+	<h2>회원 가입</h2>
+
+	<div class="form-container">
+		<div class="section-title">기본 정보</div>
+		
+		<form th:action="@{/member/join}" th:object="${memberFormDto}" method="post">
+			<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+		
+			<table>
+				<!-- 이메일 -->
+				<tr class="form-group">
+					<td><label for="email" class="required">이메일(ID)</label></td>
+					<td><input type="text" th:field="*{email}" placeholder="example@email.com"> <br>
+						<span th:if="${#fields.hasErrors('email')}" th:errors="*{email}"
+						class="error-text"></span></td>
+				</tr>
+				
+				<!-- 비밀번호 -->
+				<tr class="form-group">
+					<td><label for="password" class="required">비밀번호</label></td>
+					<td><input type="password" th:field="*{password}"> <br>
+						<span th:if="${#fields.hasErrors('password')}" th:errors="*{password}"
+						class="error-text"></span></td>
+				</tr>
+				
+				<!-- 비밀번호 확인 -->      
+				<tr class="form-group">
+					<td><label for="confirm-password" class="required">비밀번호 확인</label></td>
+					<td><input type="password" th:field="*{password_confirm}"> <br>
+						<span th:if="${#fields.hasErrors('password_confirm')}" th:errors="*{password_confirm}"
+						class="error-text"></span>
+						<span th:if="${#fields.hasErrors('passwordMatching')}" th:errors="*{passwordMatching}"
+						class="error-text"></span></td>
+				</tr>
+				
+				<!-- 닉네임 -->
+				<tr class="form-group">
+					<td><label for="username" class="required">닉네임(이름)</label></td>
+					<td class="check">
+						<input type="text" id="username" th:field="*{username}"> <br>
+						<span th:if="${#fields.hasErrors('username')}" th:errors="*{username}"
+						class="error-text"></span>
+					
+						<button type="button" onclick="checkUsername()">중복체크</button>
+						<div id="username-check-message" class="error-text"></div></td>
+				</tr>
+				
+				<!-- 연락처 -->
+				<tr class="form-group">
+					<td><label for="phone" class="required">연락처</label></td>
+					<td><input type="tel" th:field="*{phone}" placeholder="010-1234-5678"> <br>
+						<span th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}"
+						class="error-text"></span></td>
+				</tr>
+			</table>
+
+			<div class="btn-area">
+				<button id="btn-cancle" type="button" onclick="location.href='/'">취소하기</button>
+				<button type="submit">가입하기</button>
+			</div>
+		</form>
+	</div>
+	
+	<!-- 자바스크립트 -->
+	<script>
+	function checkUsername() {
+	    const username = document.getElementById("username").value;
+	    const messageBox = document.getElementById("username-check-message");
+		/* getElementById →  HTML 내에서 주어진 문자열과 값이 일치하는 id 속성의 값을 가진 요소 객체 반환 */
+		
+		if (!username) {
+      		messageBox.textContent = "닉네임을 입력해 주세요.";
+     		messageBox.style.color = "red";
+      		return;
+    	}
+		
+		fetch(`/member/check-username?username=${encodeURIComponent(username)}`)
+	      .then(response => response.json())
+	      .then(isDuplicate => {
+	        if (isDuplicate) {
+	          messageBox.textContent = "이미 사용 중인 닉네임입니다.";
+	          messageBox.style.color = "red";
+	        } else {
+	          messageBox.textContent = "사용 가능한 닉네임입니다.";
+	          messageBox.style.color = "green";
+	        }
+	      })
+			.catch(error => {
+		        console.error("중복 체크 오류:", error);
+		        messageBox.textContent = "오류가 발생했습니다. 잠시 후 다시 시도해주세요.";
+		        messageBox.style.color = "red";
+		      });
+	}
+	</script>
+</body>
+</html>

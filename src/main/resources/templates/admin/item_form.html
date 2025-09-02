@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html layout:decorate="~{layout}">
+<head>
+    <meta charset="UTF-8">
+    <title>상품 수정</title>
+    <link rel="stylesheet" th:href="@{/css/item_form.css}" />
+    <script th:src="@{/js/item.js}"></script>
+</head>
+<body>
+	<div layout:fragment="content" class="wrapper">
+	    <div class="container">
+	        <h2>상품 수정</h2>
+	        <!-- 수정 폼 -->
+	        <form th:action="${isAdmin} ? @{'/items/edit/' + ${itemUpdateDto.id}} : @{'/edit/' + ${itemUpdateDto.id}}"
+	              th:object="${itemUpdateDto}" method="post" enctype="multipart/form-data">
+	            <table>
+	                <tr>
+	                    <td><label for="name">상품명</label></td>
+	                    <td><input type="text" id="name" th:field="*{name}" /></td>
+	                </tr>
+					<tr>
+	                    <td><label for="description">상세설명</label></td>
+	                    <td>
+	                        <textarea id="description" th:field="*{description}" placeholder="전화번호, sns 계정 등 개인정보 입력은 제항될 수 있습니다.
+	상품 상태, 수량, 구매시기, 하자 유무 자세히 작성해주세요."></textarea>
+							<div class="text-danger" th:if="${#fields.hasErrors('description')}" th:errors="*{description}"></div>
+	                    </td>
+	                </tr>
+	                <tr class="form-group img">
+	                    <td><label>상품 이미지</label></td>
+	                    <td>
+	                        <th:block th:each="image : *{imageUrls}">
+	                            <img th:src="${image}" class="image-upload-box" />
+	                        </th:block>
+	                        <input type="file" name="imageFiles" multiple />
+	                    </td>
+	                </tr>
+					
+					<tr>
+	                    <td><label for="price">가격</label></td>
+	                    <td>
+	                        <input type="text" id="price" th:field="*{price}" inputmode="numeric" pattern="[0-9,]*" /> 원
+	                        <div class="text-danger" th:if="${#fields.hasErrors('price')}" th:errors="*{price}"></div>
+	                    </td>
+	                </tr>
+	                <tr>
+	                    <td><label for="region">지역</label></td>
+	                    <td><input type="text" id="region" th:field="*{region}" placeholder="예시) 인천 부평구 부평동"/></td>
+	                </tr>
+	                <tr>
+	                    <td><label for="parentCategoryId">카테고리(팀)</label></td>
+	                    <td class="category-select">
+	                        <select id="parentCategoryId" th:field="*{parentCategoryId}" required>
+	                            <option th:each="parent : ${parents}"
+	                                    th:value="${parent.id}"
+	                                    th:text="${parent.name}"></option>
+	                        </select>
+	                        <div class="text-danger" th:if="${#fields.hasErrors('parentCategoryId')}" th:errors="*{parentCategoryId}"></div>
+	                    </td>
+	                </tr>
+	                <tr>
+	                    <td><label for="childCategoryId">카테고리(품목)</label></td>
+	                    <td class="category-select">
+	                        <select id="childCategoryId" th:field="*{childCategoryId}" required>
+	                            <option th:each="child : ${children}"
+	                                    th:value="${child.id}"
+	                                    th:text="${child.name}"></option>
+	                        </select>
+	                        <div class="text-danger" th:if="${#fields.hasErrors('childCategoryId')}" th:errors="*{childCategoryId}"></div>
+	                    </td>
+	                </tr>
+				</table>
+				<div class="submit-btn">
+					<button type="submit">수정하기</button>
+					<form th:action="@{'/items/delete/' + ${itemUpdateDto.id}}" method="post" style="display:inline;" onsubmit="return confirm('정말 삭제하시겠습니까?');">
+				        <button type="submit" class="delete-btn">삭제하기</button>
+				    </form>
+				</div>
+			</form>
+		</div>
+	</div>
+</body>
+</html>

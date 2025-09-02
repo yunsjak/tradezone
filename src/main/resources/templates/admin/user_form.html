@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html layout:decorate="~{admin/common}">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" type="text/css" th:href="@{/css/admin/user_form.css}" />
+</head>
+<body>
+	<div layout:fragment="content">
+		<div class="admin-user">
+			<h2>회원 정보</h2>
+			<div class="form-box">
+			
+				<!-- 회원정보 수정 폼 -->
+				<form id="editForm" th:action="@{/admin/users/edit/{id}(id=${memberUpdateDto.id})}" th:object="${memberUpdateDto}" method="post">
+					<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+					
+					<label>이메일</label>
+						<input type="email" th:value="${email}" disabled>
+						
+					<label>비밀번호</label>
+						<input type="password" th:field="*{password}" placeholder="새 비밀번호 입력">
+						<span th:if="${#fields.hasErrors('password')}" th:errors="*{password}" class="error-text"></span>
+					
+					<label>연락처</label>
+						<input type="text" th:field="*{phone}">
+						<span th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}" class="error-text"></span>
+
+					<!-- 현재 닉네임 -->
+					<input type="hidden" id="originalUsername" th:value="${memberUpdateDto.username}" />
+					
+					<label>닉네임(이름)</label>
+					<div class="nickname-box">
+						<input type="text" id="username" th:field="*{username}">
+						<span th:if="${#fields.hasErrors('username')}" th:errors="*{username}" class="error-text"></span>
+
+						<button type="button" onclick="checkUsernameForAdmin()">중복체크</button>
+						<div id="username-check-message" class="error-text"></div>
+					</div>
+
+				</form>
+				
+				<!-- 회원정보 삭제 폼 -->
+				<form id="deleteForm" th:action="@{/admin/users/delete/{id}(id=${memberUpdateDto.id})}" method="post"> </form>
+					
+				<div class="submit-btn">
+					<button type="submit" form="editForm">수정하기</button>
+					<button type="submit" form="deleteForm" onclick="return confirm('정말 삭제하시겠습니까?')">삭제하기</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- 자바스크립트 -->
+	<script layout:fragment="script" type="text/javascript">
+	function checkUsernameForAdmin() {
+		const username = document.getElementById("username").value.trim();
+		const originalUsername = document.getElementById("originalUsername").value;
+		const messageBox = document.getElementById("username-check-message");
+		
+		if (!username) {
+			messageBox.textContent = "닉네임을 입력해 주세요.";
+			messageBox.style.color = "red";
+			return;
+		}
+		
+		if (username == originalUsername) {
+			messageBox.textContent = "현재 사용 중인 닉네임입니다.";
+			messageBox.style.color = "green";
+			return;
+		}
+		
+		fetch(`/admin/check-username?username=${encodeURIComponent(username)}`)
+			.then(response => response.json())
+			.then(isDuplicate => {
+				if (isDuplicate) {
+					messageBox.textContent = "이미 사용 중인 닉네임입니다.";
+					messageBox.style.color = "red";
+				} else {
+					messageBox.textContent = "사용 가능한 닉네임입니다.";
+					messageBox.style.color = "green";
+				}
+			})
+			.catch(error => {
+				console.error("중복 체크 오류 :", error);
+				messageBox.textContent = "오류가 발생했습니다. 잠시 후 다시 시도해주세요.";
+				messageBox.style.color = "red";
+			});
+	}
+	</script>
+</body>
+</html>

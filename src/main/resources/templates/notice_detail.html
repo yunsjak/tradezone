@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html layout:decorate="~{layout}">
+<head>
+<meta charset="UTF-8">
+<title>공지사항 상세</title>
+<link rel="stylesheet" type="text/css"
+	th:href="@{/css/page/notice_detail.css}" />
+</head>
+<body>
+	<div class="content">
+		<div class="wrapper">
+			<div class="detail" layout:fragment="content">
+				<p>공지사항</p>
+				<!-- 제목 -->
+				<h2 th:text="${notice.title}"></h2>
+				<!-- 작성일 -->
+				<p class="date"
+					th:text="${#temporals.format(notice.created, 'yyyy-MM-dd HH:mm')}"></p>
+				<hr>
+				<!-- 내용 -->
+				<!-- <textarea class="content-area" readonly th:text="${notice.content}"> </textarea> -->
+				<div class="card-text"
+					th:utext="${@commonUtil.markdown(notice.content)}"></div>
+				<!-- 버튼 -->
+				<div class="btns">
+					<div sec:authorize="hasRole('ADMIN')">
+						<a th:href="@{|/notice/modify/${notice.id}|}"><button>수정하기</button></a>
+						<a th:href="@{|/notice/delete/${notice.id}|}"><button>삭제하기</button></a>
+					</div>
+					<a th:href="@{/notice}"><button>목록</button></a>
+				</div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

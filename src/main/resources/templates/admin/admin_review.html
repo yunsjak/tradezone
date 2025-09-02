@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html layout:decorate="~{admin/common}">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" type="text/css"
+	th:href="@{/css/admin/admin_list.css}" />
+</head>
+<body>
+	<div layout:fragment="content">
+		<h1>댓글 관리</h1>
+		<div class="container-2">
+			<table>
+				<thead>
+					<tr>
+						<th>번호</th>
+						<th>닉네임(이름)</th>
+						<th>내용</th>
+						<th>등록일</th>
+						<th></th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr th:each="review : ${review}">
+						<td th:text="${review.id}"></td>
+						<td th:text="${member.username}"></td>
+						<td th:text="${review.content}"></td>
+						<td th:text="${#temporals.format(review.createdAt, 'yyyy-MM-dd')}"></td>
+						<td>
+							<button class="delete-button" type="submit" onclick="return confirm('정말 삭제하시겠습니까?')">삭제하기</button>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+		<div th:if="${reviews != null}" class="pagination">
+			<div class="pagination-button">
+				<button th:if="${reviews.hasPrevious()}" th:onclick="'location.href=\'/reviews?page=' + (paging.number - 1) + '\''">Previous</button>
+
+				<!-- 이전 페이지 없으면 버튼 비활성화 -->
+				<button th:unless="${reviews.hasPrevious()}" disabled>Previous</button>
+
+				<span th:text="${reviews.number + 1}"></span>
+
+				<button th:if="${reviews.hasNext()}" th:onclick="'location.href=\'/reviews?page=' + (paging.number + 1) + '\''">Next</button>
+
+				<!-- 다음 페이지 없으면 버튼 비활성화 -->
+				<button th:unless="${reviews.hasNext()}" disabled>Next</button>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

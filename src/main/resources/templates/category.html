@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html layout:decorate="~{layout}">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" type="text/css" th:href="@{/css/page/main.css}" />
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+	<link rel="stylesheet" type="text/css" th:href="@{/css/page/category.css}" />
+</head>
+<body>
+	<div class="content">
+		<div class="main" layout:fragment="content">
+			<p class="subject"><span th:text="${parentName}"></span> &gt; <span th:text="${childName}"></span></p>
+			<section class="py-5">
+				<div class="container px-4 px-lg-5 mt-5">
+					<div class="row gx-4 gx-lg-5 row-cols-2 row-cols-md-3 row-cols-xl-4 justify-content-center">
+					    <div class="item col mb-5" th:each="item : ${items.content}">
+						    <a th:href="@{/items/detail/{id}(id=${item.itemId})}" style="text-decoration: none; color: inherit;">
+						        <div class="card h-100">
+						            <!-- 상태 뱃지 (거래완료만 표시) -->
+						            <div class="badge bg-dark text-white position-absolute"
+						                 th:if="${item.status.description == 'SOLD_OUT'}"
+						                 style="top: 0.5rem; right: 0.5rem">
+						                거래완료
+						            </div>
+						
+						            <img class="card-img-top" th:src="${item.thumbnailUrl}" alt="상품 이미지" />
+						
+						            <div class="card-body">
+						                <div class="text-center">
+						                    <p class="fw-bolder" th:text="${item.name}"></p>
+						                    <p th:text="${item.price} + '원'"></p>
+						                </div>
+						            </div>
+						        </div>
+						    </a>
+						</div>
+					</div>
+				</div>
+			</section>
+			<!-- 페이징 -->
+			<div class="page">
+				<div class="page-button">
+					<!-- 이전 페이지 버튼 -->
+					<button th:if="${paging.hasPrevious()}"
+						th:onclick="'window.location.href=\'?page=' + ${paging.number - 1} + '\';'">
+						previous</button>
+					<button th:unless="${paging.hasPrevious()}" disabled>previous</button>
+		
+					<!-- 페이지 번호 버튼 -->				
+					<button class="active" th:text="${paging.number + 1}"></button>
+		
+					<!-- 다음 페이지 버튼 -->
+					<button th:if="${paging.hasNext()}"
+						th:onclick="'window.location.href=\'?page=' + ${paging.number + 1} + '\';'">
+						next</button>
+					<button th:unless="${paging.hasNext()}" disabled>next</button>
+				</div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

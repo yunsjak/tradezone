@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html layout:decorate="~{admin/common}">
+<head>
+	<meta charset="UTF-8">
+	<link rel="stylesheet" type="text/css" th:href="@{/css/admin/admin_list.css}" />
+</head>
+<body>
+	<div layout:fragment="content">
+		<h1>상품 관리</h1>
+		<div class="container-2">
+	        <table>
+	            <thead>
+	                <tr>
+	                    <th>상품 코드</th>
+	                    <th>상품명</th>
+	                    <th>상품가격</th>
+	                    <th>진행 상태</th>
+	                    <th>등록일</th>
+	                </tr>
+	            </thead>
+	            <tbody>
+	                <tr th:each="item : ${items}">
+	                    <td th:text="${item.itemCode}"></td>
+	                    <td><a th:href="@{/admin/items/edit/{id}(id=${item.id})}" th:text="${item.name}"></a></td>
+	                    <td th:text="${item.price}"></td>
+	                    <td th:text="${item.status.description}"></td>
+	                    <td th:text="${#temporals.format(item.created, 'yyyy-MM-dd')}"></td>
+	                </tr>
+	            </tbody>
+	        </table>
+		</div>
+		
+		<!-- 페이징 -->
+		<div th:if="${items != null}" class="pagination">
+			<div class="pagination-button">
+				<button th:if="${items.hasPrevious()}" th:onclick="'location.href=\'/items?page=' + (paging.number - 1) + '\''">Previous</button>
+
+				<!-- 이전 페이지 없으면 버튼 비활성화 -->
+				<button th:unless="${items.hasPrevious()}" disabled>Previous</button>
+
+				<span th:text="${items.number + 1}"></span>
+
+				<button th:if="${items.hasNext()}" th:onclick="'location.href=\'/items?page=' + (paging.number + 1) + '\''">Next</button>
+
+				<!-- 다음 페이지 없으면 버튼 비활성화 -->
+				<button th:unless="${items.hasNext()}" disabled>Next</button>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

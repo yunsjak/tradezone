@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html layout:decorate="~{layout}">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" type="text/css" th:href="@{/css/page/user.css}">
+    <script th:src="@{/js/user.js}"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
+
+    <style>
+        .slider-wrapper {
+            position: relative;
+            margin-top: 20px;
+            padding: 0 40px;
+            border-top: 1px solid #ccc;
+        }
+
+        .custom-arrow {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #fff;
+            border: none;
+            width: 36px;
+            height: 36px;
+            font-size: 20px;
+            z-index: 10;
+            cursor: pointer;
+        }
+
+        .custom-prev {
+            left: 0;
+        }
+
+        .custom-next {
+            right: 0;
+        }
+
+        .likes-prev {
+            left: 0;
+        }
+
+        .likes-next {
+            right: 0;
+        }
+
+        .product-list {
+            display: flex;
+        }
+
+        .product-card {
+            margin: 10px 10px;
+            transition: 0.3s;
+        }
+    </style>
+</head>
+<body>
+<div class="content">
+    <div layout:fragment="content" class="wrapper">
+        <div class="mypage-section">
+            <h2>회원정보</h2>
+            <div class="form-box">
+                <form th:action="@{/member/mypage}" th:object="${memberUpdateDto}" method="post">
+					<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+										
+					<label>이메일</label>
+					<input type="email" th:value="${email}" disabled>
+									
+					<label>비밀번호</label>
+					<input type="password" th:field="*{password}" placeholder="새 비밀번호 입력">
+					<span th:if="${#fields.hasErrors('password')}" th:errors="*{password}" class="error-text"></span>
+										
+					<label>연락처</label>
+					<input type="text" th:field="*{phone}">
+					<span th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}" class="error-text"></span>
+
+					 <!-- 현재 닉네임 -->
+					 <input type="hidden" id="originalUsername" th:value="${memberUpdateDto.username}" />
+									
+					<label>닉네임(이름)</label>
+					<div class="nickname-box">
+						<input type="text" id="username" th:field="*{username}">
+						<span th:if="${#fields.hasErrors('username')}" th:errors="*{username}" class="error-text"></span>
+
+						<button type="button" onclick="checkUsernameForMember()">중복체크</button>
+						<div id="username-check-message" class="error-text"></div>
+					</div>
+
+					<div class="save-wrapper">
+						<button type="submit" class="save-btn">저장하기</button>
+						<div th:if="${message}" class="alert alert-success" th:text="${message}"></div>
+					</div>
+				</form>
+            </div>
+        </div>
+
+        <div class="mypage-tabs">
+    		<button class="tab-button active" onclick="showTab('item')">상품 <span th:text="${myPageData != null and myPageData.items != null ? #lists.size(myPageData.items) : 0}"></span></button>
+			<button class="tab-button" onclick="showTab('likes')">찜 <span th:text="${myPageData != null and myPageData.likes != null ? #lists.size(myPageData.likes) : 0}"></span></button>
+			<button class="tab-button" onclick="showTab('review')">후기 <span th:text="${myPageData != null and myPageData.reviews != null ? #lists.size(myPageData.reviews) : 0}"></span></button>
+		</div>
+
+        <!-- 상품 목록 -->
+        <div id="itemList" class="product-section">
+            <div class="product">상품 <span class="product-count"  th:text="${myPageData != null and myPageData.items != null ? #lists.size(myPageData.items) : 0}"></span></div>
+            <div class="slider-wrapper">
+                <button type="button" class="slick-prev custom-arrow custom-prev">&#10094;</button>
+
+                <div class="product-list product-slider">
+                    <div class="product-card" th:each="item : ${myPageData != null and myPageData.items != null ? myPageData.items : {}}">
+                        <img th:if="${item.imageUrl != null}" th:src="${item.imageUrl}" alt="상품 이미지">
+                        <div class="product-title" th:text="${item.name}"></div>
+                        <div class="product-price" th:text="${#numbers.formatInteger(item.price, 3, 'COMMA')}"></div>
+                        <div class="product-time" th:text="${item.created}"></div>
+                    </div>
+                </div>
+                <button type="button" class="slick-next custom-arrow custom-next">&#10095;</button>
+            </div>
+            <p th:if="${myPageData == null or myPageData.items == null or #lists.isEmpty(myPageData.items)}">등록된 상품이 없습니다. </p>
+        </div>
+
+        <!-- 찜 목록 -->
+        <div id="likesList" class="product-section" style="display: none;">
+            <div class="product">찜  <span class="product-count" th:text="${myPageData != null and myPageData.likes != null ? #lists.size(myPageData.likes) : 0}"></span></div>
+            <div class="slider-wrapper">
+                <button type="button" class="slick-prev custom-arrow likes-prev">&#10094;</button>
+
+                <div class="product-list wish-slider">
+                    <div class="product-card" th:each="like : ${myPageData != null and myPageData.likes != null ? myPageData.likes : {}}">
+                        <img th:if="${like.imageUrl != null}" th:src="${like.imageUrl}" alt="찜 이미지">
+                        <div class="product-title" th:text="${like.name}"></div>
+                        <div class="product-price" th:text="${#numbers.formatInteger(like.price, 3, 'COMMA')}"></div>
+                        <div class="product-time" th:text="${like.createdTime}"></div>
+                    </div>
+                </div>
+                <button type="button" class="slick-next custom-arrow likes-next">&#10095;</button>
+            </div>
+            <p th:if="${myPageData == null or myPageData.items == null or #lists.isEmpty(myPageData.items)}">등록된 상품이 없습니다. </p>
+        </div>
+
+        <!-- 후기 목록 -->
+        <div id="reviewList" class="product-section" style="display: none;">
+            <div class="product">후기 <span class="product-count" th:text="${myPageData != null and myPageData.reviews != null ? #lists.size(myPageData.reviews) : 0}"></span></div>
+            <div class="review-table-box">
+                <table class="review-table">
+                    <thead>
+                    <tr>
+                        <th>번호</th>
+                        <th>상품명</th>
+                        <th>내용</th>
+                        <th>작성일</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="review : ${myPageData != null and myPageData.reviews != null ? myPageData.reviews : {}}">
+                        <td th:text="${iterStat.count}"></td>
+                        <td th:text="${review.itemName}"></td>
+                        <td th:text="${review.content}"></td>
+                        <td th:text="${#temporals.format(review.createdDate, 'yyyy-MM-dd')}"></td>
+                    </tr>
+                    </tbody>
+                </table>
+                <p th:if="${myPageData == null or myPageData.items == null or #lists.isEmpty(myPageData.items)}">등록된 후기가 없습니다. </p>
+            </div>
+            <!-- 페이징 -->
+            <div class="pagination">
+                <div class="pagination-button">
+                    <!-- 이전 페이지 버튼 -->
+                    <button th:if="${paging.hasPrevious()}"
+                            th:onclick="'window.location.href=\'?page=' + ${paging.number - 1} + '\';'">
+                        previous
+                    </button>
+                    <button th:unless="${paging.hasPrevious()}" disabled>previous</button>
+
+                    <!-- 페이지 번호 버튼 -->
+                    <button class="active" th:text="${paging.number + 1}"></button>
+
+                    <!-- 다음 페이지 버튼 -->
+                    <button th:if="${paging.hasNext()}"
+                            th:onclick="'window.location.href=\'?page=' + ${paging.number + 1} + '\';'">
+                        next
+                    </button>
+                    <button th:unless="${paging.hasNext()}" disabled>next</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- 자바스크립트 -->
+	<script layout:fragment="script" type="text/javascript">
+	
+	$(document).ready(function () {
+		  initSlider('.product-slider', '.custom-prev', '.custom-next');
+
+		  function initSlider(selector, prevBtn, nextBtn) {
+		    if (!$(selector).hasClass('slick-initialized')) {
+		      $(selector).slick({
+		        slidesToShow: 3,
+		        slidesToScroll: 1,
+		        arrows: true,
+		        infinite: false,
+		        prevArrow: $(prevBtn),
+		        nextArrow: $(nextBtn),
+		        responsive: [
+		          { breakpoint: 768, settings: { slidesToShow: 2 } },
+		          { breakpoint: 480, settings: { slidesToShow: 1 } }
+		        ]
+		      });
+		    }
+		  }
+
+		  window.showTab = function (tabName) {
+		    $('.product-section').hide();
+		    $('.tab-button').removeClass('active');
+
+		    if (tabName === 'item') {
+		      $('#itemList').show();
+		      initSlider('.product-slider', '.custom-prev', '.custom-next');
+		    } else if (tabName === 'likes') {
+		      $('#likesList').show();
+		      initSlider('.wish-slider', '.likes-prev', '.likes-next');
+		    } else if (tabName === 'review') {
+		      $('#reviewList').show();
+		    }
+
+		    $('button[onclick*="' + tabName + '"]').addClass('active');
+		  };
+		});
+	
+	/* 중복체크 */
+	function checkUsernameForMember() {
+		const username = document.getElementById("username").value.trim();
+		/* trim() 사용 이유 → 공백 있으면 다른 문자열로 인식됨 */
+		const originalUsername = document.getElementById("originalUsername").value;
+		const messageBox = document.getElementById("username-check-message");
+		
+		if (!username) {
+			messageBox.textContent = "닉네임을 입력해 주세요.";
+			messageBox.style.color = "red";
+			return;
+		}
+		
+		if (username == originalUsername) {
+			messageBox.textContent = "현재 사용 중인 닉네임입니다.";
+			messageBox.style.color = "green";
+			return;
+		}
+		
+		fetch(`/member/check-username?username=${encodeURIComponent(username)}`)
+			.then(response => response.json())
+			.then(isDuplicate => {
+				if (isDuplicate) {
+					messageBox.textContent = "이미 사용 중인 닉네임입니다.";
+					messageBox.style.color = "red";
+				} else {
+					messageBox.textContent = "사용 가능한 닉네임입니다.";
+					messageBox.style.color = "green";
+				}
+			})
+			.catch(error => {
+				console.error("중복 체크 오류 :", error);
+				messageBox.textContent = "오류가 발생했습니다. 잠시 후 다시 시도해주세요.";
+				messageBox.style.color = "red";
+			});
+	}
+	</script>
+</body>
+</html>

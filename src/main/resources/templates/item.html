@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html layout:decorate="~{layout}">
+<head>
+	<meta charset="UTF-8">
+	<link rel="stylesheet" type="text/css" th:href="@{/css/page/item.css}">
+	<link rel="stylesheet"
+		href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+		integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg=="
+		crossorigin="anonymous" referrerpolicy="no-referrer" />
+		
+	 <style>
+	    /* 하트 색상 스타일 */
+	    .fa-heart { cursor: pointer; transition: color 0.2s ease; }
+	    .fa-solid.fa-heart { color: red; } /* 좋아요 ON 시 빨간색 */
+	  </style>
+</head>
+<body>
+	<div class="content">
+		<div layout:fragment="content">
+			<div class="wrapper">
+				<div class="wrap">
+					<div class="product">
+						<div class="productline">
+							<a th:href="@{/items/main}">홈</a> &gt; <a th:text="${item.parentName}"></a> &gt; <a th:href="@{/items/category/{parentId}/{childId}(parentId=${item.parentCategoryId}, childId=${item.childCategoryId})}" th:text="${item.childName}"></a>
+						</div>
+						<div class="productstyle">
+							<div class="productstyle-1">
+								<img th:if="${item.imgUrls != null and item.imgUrls.size() > 0}"
+     								th:src="${item.imgUrls[0]}" height="650px" alt="제품 이미지" />
+								<div class="productmenu">
+									<div class="title-section">
+										<div class="productname" th:text="${item.name}"></div>
+										<div class="like-section">
+											<div class="like">
+												<i class="heart fa-regular fa-heart fa-2x"></i>
+												<div class="like-count" th:text="${item.likeCount}"></div>
+											</div>
+										</div>
+									</div>
+									<div class="productprice" th:text="${item.price} + '원'"></div>
+									<div class="data-section">
+										<div class="productdata">
+											<div class="productdata-1" th:text="${#temporals.format(item.created, 'yy.MM.dd')}"></div>
+											<div class="productdata-2" th:text="'조회수 ' + ${item.viewCount}"></div>
+										</div>
+									</div>
+									<div class="user-info-box">
+									  <div class="info-item">
+									    <div class="info-label">판매자</div>
+									    <div class="info-value">
+									      <span th:text="${item.sellerName}"></span><br />
+									      <span class="sub-text" th:text="'판매 상품 ' + ${item.sellerItemCount} + '개'"></span>
+									    </div>
+									  </div>
+									
+									  <div class="divider"></div>
+									
+									  <div class="info-item region">
+									    <div class="info-label">지역</div>
+									    <div class="info-value">
+									      <span th:text="${item.region}"></span>
+									    </div>
+									  </div>
+									
+									  <div class="divider"></div>
+									
+									  <div class="info-item">
+									    <div class="info-label">상태</div>
+									    <div class="info-value" th:text="${item.status.description}"></div>
+									  </div>
+									</div>
+									<div class="product-detail">
+										<div class="description">상품정보</div>
+										<div class="line"></div>
+										<div class="content">
+											<p th:text="${item.description}"></p>
+										</div>
+									</div>
+									<div class="action-buttons" th:if="${isSeller}">
+									  <div class="action-item">
+									    <i class="fa-solid fa-pen"></i>
+									    <div class="action-label">상품수정</div>
+									  </div>
+									
+									  <div class="divider"></div>
+									
+									  <div class="action-item">
+									    <i class="fa-regular fa-circle-check"></i>
+									    <div class="action-label">상태변경</div>
+									  </div>
+									</div>
+									<div class="action-button" th:if="${!isSeller}">
+										<button type="button" class="btn">채팅하기</button>
+										<button type="submit">결제하기</button>
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="line"></div>
+					</div>
+				</div>
+				<div class="wrap">
+					<div class="view">
+						<div class="productview">상품 후기 <span class="viewcount" th:text="${item.reviews.size()}"></span></div>
+						
+						<form th:action="@{/reviews/item/{itemId}/create(itemId=${item.id})}" 
+						      th:object="${reviewForm}" 
+						      method="post" 
+						      class="review-form">
+						
+						    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+						
+						    <textarea th:field="*{content}" placeholder="리뷰 내용을 입력하세요"></textarea>
+						
+						    <button type="submit">작성</button>
+						</form>
+						
+						<div class="review-section">
+							<div th:each="review : ${item.reviews}">
+								<div class="user">
+									<div class="userimgsmall"><i class="fa-regular fa-circle-user fa-2x"></i></div>
+									<div class="user-info">
+										<div class="user-3" th:text="${review.member.username}"></div>
+										<div class="user-4" th:text="'판매 상품 ' + ${item.sellerItemCount} + '개'"></div>
+									</div>
+									<div class="viewcontent" th:text="${review.content}"></div>
+									<div class="viewdata" th:text="${#temporals.format(review.created, 'yy.MM.dd')}"></div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<script layout:fragment="script" type="text/javascript">
+	    document.addEventListener("DOMContentLoaded", () => {
+	      const heart = document.querySelector(".heart");     // 하트 아이콘
+	      const likeCount = document.querySelector(".like-count"); // 좋아요 숫자
+	      let liked = false; // 상태 저장 (※ 테스트용, 나중엔 서버에서 가져옴)
+	
+	      heart.addEventListener("click", () => {
+	        liked = !liked; // 상태 반전
+	
+	        if (liked) {
+	          heart.classList.remove("fa-regular");
+	          heart.classList.add("fa-solid");
+	          likeCount.textContent = parseInt(likeCount.textContent) + 1;
+	        } else {
+	          heart.classList.remove("fa-solid");
+	          heart.classList.add("fa-regular");
+	          likeCount.textContent = parseInt(likeCount.textContent) - 1;
+	        }
+	      });
+	    });
+	  </script>
+</body>
+</html>

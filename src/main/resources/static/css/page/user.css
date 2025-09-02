@@ -1,0 +1,223 @@
+@charset "UTF-8";
+
+.mypage-section {
+	width: 50%;
+	margin: 40px auto;
+	font-family: 'Arial', sans-serif;
+}
+
+h2 {
+	margin-bottom: 20px;
+	font-size: 22px;
+	font-weight: bold;
+	border-bottom: 1px solid #000;
+	padding-bottom: 10px;
+}
+
+.form-box {
+	background-color: #fafafa;
+	padding: 30px;
+	border: 1px solid #ddd;
+	border-radius: 10px;
+}
+
+.form-box label {
+	display: block;
+	margin: 15px 0 5px;
+	font-weight: bold;
+}
+
+.form-box input[type="text"],
+.form-box input[type="email"],
+.form-box input[type="password"] {
+	width: 100%;
+	padding: 8px;
+	border: 1px solid #ccc;
+	border-radius: 6px;
+}
+
+.nickname-box {
+	display: flex;
+	gap: 10px;
+}
+
+.nickname-box input {
+	flex: 1;
+}
+
+.check-btn {
+	padding: 8px 12px;
+	border: 1px solid #aaa;
+	background: #eee;
+	cursor: pointer;
+}
+
+.save-wrapper {
+	text-align: center;
+	margin-top: 30px;
+}
+
+.save-btn {
+	padding: 10px 20px;
+	background-color: #222;
+	color: #fff;
+	border: none;
+	border-radius: 6px;
+	font-size: 15px;
+	cursor: pointer;
+}
+
+/* 탭 버튼 */
+.mypage-tabs {
+	margin-top: 40px;
+	display: flex;
+	justify-content: center;
+	gap: 5px;
+}
+
+.tab-button {
+	padding: 10px 50px;
+	font-size: 16px;
+	background: white;
+	border: 1px solid #aaa;
+	border-radius: 6px;
+	cursor: pointer;
+}
+
+.tab-button.active {
+	background: #333;
+	color: white;
+}
+
+/* 리스트 공통 영역 */
+.product-section {
+	margin: 20px auto;
+	width: 50%;
+	display: block;
+}
+
+.product-section p {
+   text-align: center;
+}
+
+.product {
+	font-size: 16px;
+	text-align: left;
+}
+
+.product-count {
+	font-size: 16px;
+	color: red;
+}
+
+/* 카드가 있을 경우 */
+.product-list {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	gap: 20px;
+	margin-top: 20px;
+	margin-bottom: 60px;
+}
+
+/* 카드 개별 스타일 */
+.product-card {
+	margin-top: 30px;
+	width: 22%;
+	min-width: 180px;
+	border: 1px solid #ddd;
+	border-radius: 8px;
+	overflow: hidden;
+	padding: 10px;
+	text-align: center;
+	background-color: #fff;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.product-card img {
+	width: 100%;
+	height: auto;
+	object-fit: cover;
+}
+
+.product-title {
+	margin-top: 10px;
+	font-weight: bold;
+	font-size: 15px;
+}
+
+.product-price {
+	color: #e60023;
+	font-weight: bold;
+	margin-top: 5px;
+}
+
+.product-time {
+	font-size: 12px;
+	color: #777;
+	margin-top: 4px;
+}
+
+/* 비어있을 때 문구 */
+.no-item {
+	color: #888;
+	font-size: 15px;
+	text-align: center;
+	width: 100%;
+}
+
+
+/* 후기 테이블 스타일 */
+.review-table-box {
+	width: 100%;
+	margin: 20px auto;
+  	border-top: 1px solid #ccc;
+  	padding-top: 30px;
+}
+
+.review-table {
+	width: 90%;
+	border-collapse: collapse;
+	text-align: center;
+	margin: 0 auto;
+	font-size: 14px;
+}
+
+.review-table th,
+.review-table td {
+	border: 1px solid #ccc;
+	padding: 10px;
+}
+
+.review-table thead {
+	background-color: #f2f2f2;
+	font-weight: bold;
+}
+
+/* 👉 hover 효과 추가 */
+.review-table tbody tr:hover {
+	background-color: #f9f9f9;
+	cursor: pointer;
+}
+
+.pagination {
+    text-align: center;
+}
+      
+.pagination-button {
+    display: inline-flex;
+    gap: 6px;
+    margin-top: 10px;
+}
+
+.pagination button {
+    padding: 6px 12px;
+    border: 1px solid #ccc;
+    background-color: white;
+    cursor: pointer;
+}
+
+.pagination .active {
+    background-color: #eee;
+    font-weight: bold;
+}

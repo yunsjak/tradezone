@@ -1,0 +1,132 @@
+@charset "UTF-8";
+
+body {
+   margin: 0;
+   font-family: 'Noto Sans KR', sans-serif;
+}
+
+.main {
+   max-width: 800px;
+   margin: 40px auto;
+   padding: 0 20px;
+   background-color: white;
+}
+
+h2 {
+   font-size: 20px;
+   margin-bottom: 10px;
+   padding-bottom: 10px;
+}
+
+table {
+   margin: 0;
+   width: 100%;
+   border-collapse: collapse;
+}
+
+tr {
+   border-bottom: 1px solid #ccc;
+}
+
+td {
+   padding: 20px 10px;
+   vertical-align: top;
+}
+
+td label {
+   display: inline-block;
+   width: 100%;
+   font-weight: bold;
+   padding-top: 8px;
+}
+
+td input[type="text"],
+td input[type="file"],
+td textarea,
+td select {
+   width: 100%;
+   max-width: 700px;
+   padding: 10px;
+   font-size: 14px;
+   border: 1px solid #ccc;
+   border-radius: 4px;
+   box-sizing: border-box;
+   font-family: 'Noto Sans KR', sans-serif;
+   outline: none;
+}
+
+td input[type="file"] {
+   width: 100%;
+   max-width: 300px;
+   height: 45px;
+   font-size: 12px;
+}
+
+td input:focus::placeholder,
+td textarea:focus::placeholder {
+  color:transparent;
+}
+
+textarea {
+   height: 120px;
+   resize: none;
+}
+
+.image-upload-box {
+   width: 150px;
+   height: 150px;
+   border: 1px dashed #aaa;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   color: #888;
+   cursor: pointer;
+   text-align: center;
+   background-color: #ededed;
+   margin-bottom: 10px;
+}
+
+#price {
+   max-width: 300px;
+   width: 100%;
+   margin-right: 10px;
+}
+
+#region {
+   display: flex;
+   max-width: 300px;
+}
+
+.category-select {
+   display: flex;
+   gap: 20px;
+}
+
+.category-select select {
+   width: 300px;
+}
+
+.submit-btn {
+   text-align: right;
+   margin-top: 20px;
+}
+
+.submit-btn button {
+   padding: 8px 16px;
+   border: 1px solid #aaa;
+   background-color: #f5f5f5;
+   color: #757575;
+   font-size: 14px;
+   cursor: pointer;
+}
+
+
+.submit-btn button:hover {
+    background-color: #f7f7f7;
+}
+
+.text-danger {
+    color: red;
+    font-size: 0.85rem;
+    margin-top: 4px;
+}

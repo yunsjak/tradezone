@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html layout:decorate="~{layout}">
+<head>
+<meta charset="UTF-8">
+<title>공지사항 작성</title>
+<link rel="stylesheet" type="text/css"
+	th:href="@{/css/page/notice_form.css}">
+</head>
+<body>
+	<div class="content">
+		<div class="wrapper">
+			<div layout:fragment="content">
+				<form class="form" th:object="${noticeFormDto}" method="post">
+					<input type="text"
+						th:field="*{title}" class="title" placeholder="제목" required />
+					<hr>
+					<textarea th:field="*{content}" class="content-area"
+						placeholder="내용을 입력하세요" required></textarea>
+					<div class="btns">
+
+						<div th:if="${#fields.hasErrors('title')}" th:errors="*{title}"></div>
+						<div th:if="${#fields.hasErrors('content')}"
+							th:errors="*{content}"></div>
+						<button type="submit">저장하기</button>
+						<a th:href="@{/notice}"><button type="button">취소하기</button></a>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

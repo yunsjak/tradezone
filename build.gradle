@@ -1,0 +1,89 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.5.5'
+	id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'com.shop.tradezone'
+version = '0.0.1-SNAPSHOT'
+description = 'sbb project for Spring Boot'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(17)
+	}
+}
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+	
+	// JPA
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	
+	// Thymeleaf
+	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+	implementation 'nz.net.ultraq.thymeleaf:thymeleaf-layout-dialect'
+	
+	// Lombok
+	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
+	
+	// Devtools
+	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+	
+	// Mysql
+	runtimeOnly 'com.mysql:mysql-connector-j'
+	
+	// JUnit
+	testImplementation 'org.junit.jupiter:junit-jupiter' 
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    
+    // validation
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	
+	// security 
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.thymeleaf.extras:thymeleaf-extras-springsecurity6'
+    
+    // Webflux
+	implementation 'org.springframework.boot:spring-boot-starter-webflux'
+	
+	// WebSocket / STOMP
+    implementation 'org.springframework.boot:spring-boot-starter-websocket'
+    // implementation 'org.springframework.boot:spring-boot-starter-messaging'
+	
+	
+	// S3
+	implementation platform('software.amazon.awssdk:bom:2.32.20')
+	implementation 'software.amazon.awssdk:s3'
+	
+	// JSON
+  	implementation 'com.googlecode.json-simple:json-simple:1.1.1'
+  	
+  	// markdown
+    implementation 'org.commonmark:commonmark:0.21.0'
+    
+    // Mail
+    implementation 'org.springframework.boot:spring-boot-starter-mail'
+	
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
+
+tasks.withType(JavaCompile) {
+    options.compilerArgs << "-parameters"
+}

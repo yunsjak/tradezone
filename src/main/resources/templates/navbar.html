@@ -1,0 +1,49 @@
+<th:block th:fragment="headerFragment">
+	<nav>
+		<div class="content">
+			<div class="navbar-1">
+				<!-- 비로그인 상태 -->
+				<span sec:authorize="isAnonymous()"> <a
+					th:href="@{/member/join}">회원가입</a> <a th:href="@{/member/login}">로그인</a>
+				</span>
+				<!-- 로그인한 사용자에게 로그아웃 버튼 보이기 -->
+				<span sec:authorize="isAuthenticated()"> <a
+					th:href="@{/member/logout}">로그아웃</a>
+				</span>
+				<!-- 일반 사용자에게만 마이페이지 보이기 -->
+				<a sec:authorize="hasRole('USER')" th:href="@{/member/mypage}">마이페이지</a>
+				<!-- 관리자에게만 관리자페이지 보이기 -->
+				<a sec:authorize="hasRole('ADMIN')" th:href="@{/admin/adminPage}">관리자페이지</a>
+			</div>
+			<div class="navbar-2">
+				<a class="navbar-brand" th:href="@{/}">tradeZone</a>
+				<form class="search-box" action="" method="get">
+					<input class="search-txt" type="text" placeholder="원하시는 상품명을 입력하세요">
+					<button class="search-btn" type="submit">
+						<i class="fa-solid fa-magnifying-glass"></i>
+					</button>
+				</form>
+				<div class="sub-bar">
+					<a th:href="@{/items/new}">판매하기</a> <a th:href="@{/chat}">채팅하기</a> <a
+						th:href="@{/notice}">공지사항</a>
+				</div>
+			</div>
+			<div class="navbar-3">
+			    <ul>
+			        <li th:each="parent : ${categories}">
+			            <div class="parent-category">
+			                <img th:src="${parent.imgUrl}" alt="카테고리 이미지" />
+			            </div>
+			            <ul>
+			                <li th:each="child : ${parent.children}">
+			                    <a th:href="@{/items/category/{parentId}/{childId}(parentId=${parent.id}, childId=${child.id})}">
+			                        <span th:text="${child.name}"></span>
+			                    </a>
+			                </li>
+			            </ul>
+			        </li>
+			    </ul>
+			</div>
+		</div>
+	</nav>
+</th:block>

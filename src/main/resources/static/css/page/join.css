@@ -1,0 +1,134 @@
+@charset "UTF-8";
+
+body {
+	font-family: 'Noto Sans KR', sans-serif;
+	background-color: #fff;
+	margin: 0;
+	padding: 40px;
+	color: #333;
+}
+
+h2 {
+	text-align: center;
+	font-size: 24px;
+	font-weight: bold;
+	margin-bottom: 40px;
+}
+
+.form-container {
+	max-width: 700px;
+	margin: 0 auto;
+}
+
+.section-title {
+	font-size: 18px;
+	font-weight: bold;
+	border-bottom: 1.5px solid #000;
+	padding-bottom: 5px;
+	position: relative;
+}
+
+.section-title::after {
+	content: '필수 입력 사항 *';
+	position: absolute;
+	right: 0;
+	font-size: 13px;
+	color: #999;
+	font-weight: normal;
+}
+
+table {
+	width: 100%;
+	border-spacing: 0;
+	border-collapse: collapse;
+}
+
+.form-group {
+	height: 90px;
+	vertical-align: middle;
+}
+
+label {
+	font-size: 12px;
+}
+
+.required::after {
+	content: ' *';
+	color: red;
+	margin-left: 4px;
+}
+
+td {
+	padding: 10px 10px;
+	vertical-align: middle;
+	border-bottom: 1px solid #d1d1d1;
+}
+
+td:first-child {
+	width: 160px;
+	text-align: left;
+	padding-right: 20px;
+	background-color: #efefef; 
+}
+
+input, select {
+	width: 100%;
+	max-width: 400px;
+	padding: 10px;
+	border: 1px solid #ccc;
+	border-radius: 6px;
+	box-sizing: border-box;
+	background-color: #fff; 
+}
+
+.btn-area {
+	text-align: center;
+	margin: 40px;
+}
+
+#btn-cancle {
+	background-color: #fff;
+	color: black;
+	border: 1px solid black;
+}
+
+button {
+	background-color: #000;
+	color: white;
+	padding: 12px 80px;
+	font-size: 16px;
+	cursor: pointer;
+	margin: 0 10px;
+	border: 1px solid #aaa;
+	border-radius: 6px;
+}
+
+.check {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 1.75rem 10px;
+}
+
+.check input {
+	flex: 1;
+	padding: 8px;
+	font-size: 16px;
+}
+
+.check button {
+	padding: 8px 16px;
+	background-color: black;
+	color: white;
+	cursor: pointer;
+	text-orientation: mixed;
+	font-size: 14px;
+	border: 1px solid #aaa;
+	border-radius: 6px;
+}
+
+.error-text {
+    color: red;
+    font-size: 11px;
+    margin-top: 4px;
+}
