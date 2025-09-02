@@ -34,7 +34,7 @@
         }
 
         .card {
-            height: 80%;
+            height: 80%; 
             margin: 10px 20px;
         }
 
@@ -68,60 +68,72 @@
 
 <!-- AJAX 및 슬릭 초기화 -->
 <script layout:fragment="script" type="text/javascript">
-    $(document).ready(function () {
-        $.ajax({
-            url: '/api/items/main',
-            method: 'GET',
-            success: function (items) {
-                const $slider = $('.product-slider');
-                $slider.empty(); // 기존 카드 제거
+$(function() {
+	console.log("jQuery works!");
+    $("body").append("<p>jQuery is loaded successfully.</p>");
 
-                items.forEach(item => {
-                    const isSoldOut = item.status === 'SOLD_OUT';
+    $.ajax({
+        url: '/api/items/main',
+        method: 'GET',
+        success: function (items) {
+            const $slider = $('.product-slider');
+            $slider.empty(); // 기존 카드 제거
 
-                    const badge = isSoldOut
-                        ? `<div class="badge bg-dark text-white position-absolute" style="top: 0.5rem; right: 0.5rem">거래완료</div>`
-                        : "";
+            items.forEach(item => {
+                const isSoldOut = item.status === 'SOLD_OUT';
 
-                    const cardHtml = `
-                        <div class="card position-relative">
-                            <a href="/items/detail/${item.itemId}" style="color: black; text-decoration: none;">
-                                ${badge}
-                                <img class="card-img-top" src="${item.imgUrl}" alt="${item.name}" />
-                                <div class="card-body p-4 text-center">
-                                    <p class="fw-bolder">${item.name}</p>
-                                    <p class="item-price">${item.price}원</p>
-                                </div>
-                            </a>
-                        </div>
-                    `;
+                const badge = isSoldOut
+                    ? `<div class="badge bg-dark text-white position-absolute" style="top: 0.5rem; right: 0.5rem">거래완료</div>`
+                    : "";
 
-                    $slider.append(cardHtml);
-                });
+                const cardHtml = `
+                    <div class="card position-relative">
+                        <a href="/items/detail/${item.itemId}" style="color: black; text-decoration: none;">
+                            ${badge}
+                            <img class="card-img-top" src="${item.imgUrl}" alt="${item.name}" />
+                            <div class="card-body p-4 text-center">
+                                <p class="fw-bolder">${item.name}</p>
+                                <p class="item-price">${item.price}원</p>
+                            </div>
+                        </a>
+                    </div>
+                `;
 
-                // 슬라이더 초기화 (중복 방지)
-                if ($slider.hasClass('slick-initialized')) {
-                    $slider.slick('unslick');
-                }
+                $slider.append(cardHtml);
+            });
 
-                $slider.slick({
-                    infinite: true,
-                    slidesToShow: 4,
-                    slidesToScroll: 1,
-                    arrows: true,
-                    dots: true,
-                    responsive: [
-                        { breakpoint: 1024, settings: { slidesToShow: 3 } },
-                        { breakpoint: 768, settings: { slidesToShow: 2 } },
-                        { breakpoint: 480, settings: { slidesToShow: 1 } }
-                    ]
-                });
-            },
-            error: function () {
-                console.error('상품 정보를 불러오는 데 실패했습니다.');
+            // 슬라이더 초기화 (중복 방지)
+            if ($slider.hasClass('slick-initialized')) {
+                $slider.slick('unslick');
             }
-        });
+
+            $slider.slick({
+                infinite: true,
+                slidesToShow: 4,
+                slidesToScroll: 1,
+                arrows: true,
+                dots: true,
+                responsive: [
+                    { breakpoint: 1024, settings: { slidesToShow: 3 } },
+                    { breakpoint: 768, settings: { slidesToShow: 2 } },
+                    { breakpoint: 480, settings: { slidesToShow: 1 } }
+                ]
+            });
+
+            // 메인 페이지 JS 완료 후 네브바 JS 함수 호출 (예: loadSingleCardGames)
+            if (typeof loadSingleCardGames === "function") {
+                loadSingleCardGames();
+            }
+        },
+        error: function () {
+            console.error('상품 정보를 불러오는 데 실패했습니다.');
+            // 실패 시에도 네브바 함수 호출하여 UI 유지
+            if (typeof loadSingleCardGames === "function") {
+                loadSingleCardGames();
+            }
+        }
     });
+});
 </script>
 
 </body>

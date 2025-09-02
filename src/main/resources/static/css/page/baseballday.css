@@ -1,0 +1,218 @@
+@charset "UTF-8";
+
+/* .baseballbody {
+	font-family: 'Segoe UI', sans-serif;
+	background-color: #f4f6f9;
+	font-size: 14px;
+} */
+
+.team-logo {
+	width: 40px;
+	height: 40px;
+	object-fit: contain;
+}
+
+.stadium-link {
+	color: #0077cc;
+	text-decoration: none;
+}
+
+.stadium-link:hover {
+	text-decoration: underline;
+}
+
+table th, table td {
+	vertical-align: middle !important;
+	padding: 4px 6px;
+	font-size: 13px;
+}
+
+.slider-container {
+	position: relative;
+	width: 100%;
+	margin-bottom: 0.5rem;
+	display: flex;
+	justify-content: center;
+}
+
+.slider-wrapper {
+	display: flex;
+	gap: 10px;
+	overflow-x: auto;
+	scroll-behavior: smooth;
+	padding: 8px 0;
+	justify-content: center;
+}
+
+.slider-wrapper::-webkit-scrollbar {
+	display: none;
+}
+
+.today-card {
+	flex: 0 0 auto;
+	width: 180px;
+	border: 1px solid #ddd;
+	border-radius: 10px;
+	background: white;
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+	text-align: center;
+	padding: 6px;
+	font-size: 11px;
+	font-weight: bold;
+	position: relative;
+}
+
+.status {
+	font-weight: bold;
+}
+
+.status.PLAY {
+	color: green;
+}
+
+.status.CANCEL {
+	color: red;
+}
+
+.status.END {
+	color: red;
+}
+
+.status.BEFORE {
+	color: gray;
+}
+
+.slider-btn {
+	position: absolute;
+	top: 50%;
+	transform: translateY(-50%);
+	background: white;
+	border: none;
+	border-radius: 50%;
+	width: 30px;
+	height: 30px;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+	font-size: 18px;
+	font-weight: bold;
+	cursor: pointer;
+	z-index: 5;
+}
+
+.slider-btn:disabled {
+	opacity: 0.3;
+	cursor: default;
+}
+
+.slider-btn.left {
+	left: 0;
+}
+
+.slider-btn.right {
+	right: 0;
+}
+
+.table>:not(caption)>*>* {
+	padding: .2rem .4rem;
+}
+
+.pagination-sm .page-link {
+	padding: .2rem .4rem;
+	font-size: .75rem;
+}
+
+.page-link {
+	width: 2.5rem;
+	font-weight: bold;
+}
+
+.pitcher {
+	font-size: 10px;
+	color: #555;
+}
+
+.team-name-table {
+  /* white-space: nowrap;       
+  overflow: hidden;          
+  display: inline-block;     
+  max-width: 120px;    */        
+font-size: 15px;
+}
+
+.homename {
+	font-size: 15px;
+}
+
+.score-table {
+	font-weight: bold;
+	font-size: 16px;
+	color: #333;
+}
+
+.win-score-table {
+	color: #dc3545;
+	font-size: 20px;
+	font-weight: bold;
+}
+
+.lose-score-table {
+	color: #333;
+	font-size: 18px;
+	font-weight: bold;
+}
+
+.today-score-text {
+	font-weight: bold;
+	display: flex;
+	align-items: center;
+}
+
+.win-score-today {
+	color: #dc3545;
+	font-size: 26px;
+	font-weight: bold;
+}
+
+.lose-score-today {
+	color: #333;
+	font-size: 20px;
+	font-weight: bold;
+}
+
+.score-dash {
+	font-size: 20px;
+	font-weight: bold;
+	margin: 0 4px;
+}
+
+.table-team-cell {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.table-team-info {
+	display: flex;
+	align-items: center;
+}
+.pagination {
+    text-align: center;
+}
+      
+.pagination-button {
+    display: inline-flex;
+    gap: 6px;
+    margin-top: 10px;
+    font-size:13px;
+}
+
+.pagination button {
+    padding: 6px 12px;
+    border: 1px solid #ccc;
+    background-color: white;
+    cursor: pointer;
+}
+
+.pagination .active {
+    background-color: #eee;
+    font-weight: bold;
+}

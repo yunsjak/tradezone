@@ -117,7 +117,6 @@ td textarea:focus::placeholder {
 .submit-btn button:hover,
 .delete-btn button:hover {
     background-color: #f7f7f7;
-    color: white;
 }
 
 /* 삭제 버튼 스타일 */
