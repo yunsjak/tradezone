@@ -16,7 +16,8 @@ import com.shop.tradezone.entity.Item;
 import com.shop.tradezone.entity.ItemImg;
 import com.shop.tradezone.repository.ItemImgRepository;
 
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -31,8 +32,8 @@ public class ItemImgService {
 	private final List<String> allowedContentTypes = List.of("image/jpeg", "image/png", "image/gif", "image/webp",
 			"image/bmp");
 
-	// 이미지 업로드 + 리사이징 + DB 저장
-	@Transactional
+	// 이미지 업로드 + 리사이징 + DB 저장 (상위 트랜잭션과 분리)
+	@Transactional(propagation = Propagation.REQUIRES_NEW)
 	public ItemImg uploadAndSaveItemImg(MultipartFile file, Item item) throws IOException {
 		log.info("서비스: uploadAndSaveItemImg 호출됨 - 파일명: {}", file.getOriginalFilename());
 
@@ -68,7 +69,7 @@ public class ItemImgService {
 		return savedImg;
 	}
 
-	@Transactional
+	@Transactional(propagation = Propagation.REQUIRES_NEW)
 	public void deleteItemImg(Long itemImgId) {
 		ItemImg img = itemImgRepository.findById(itemImgId).orElseThrow(() -> new RuntimeException("이미지를 찾을 수 없습니다."));
 
@@ -77,7 +78,7 @@ public class ItemImgService {
 		itemImgRepository.delete(img);
 	}
 
-	@Transactional
+	@Transactional(propagation = Propagation.REQUIRES_NEW)
 	public ItemImg updateItemImg(Long itemImgId, MultipartFile newFile) throws IOException {
 		validateFile(newFile);
 

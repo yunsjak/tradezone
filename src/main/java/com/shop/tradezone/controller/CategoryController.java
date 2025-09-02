@@ -20,6 +20,14 @@ public class CategoryController {
 	@Autowired
 	private CategoryService categoryService;
 
+	@GetMapping("/parents")
+	public List<CategoryDto> getParentCategories() {
+		List<Category> parents = categoryService.findParentCategoriesWithChildren();
+		return parents.stream()
+				.map(p -> new CategoryDto(p.getId(), p.getName(), p.getImgUrl(), null, null))
+				.collect(Collectors.toList());
+	}
+
 	@GetMapping("/children")
 	public List<CategoryDto> getChildCategories(@RequestParam("parentId") Long parentId) {
 		// 자식 카테고리 가져오기

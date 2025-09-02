@@ -60,6 +60,13 @@ public class Item {
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "seller")
 	private Member seller;
+	
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "buyer")
+	private Member buyer;
+	
+	@Column(name = "purchased_at")
+	private LocalDateTime purchasedAt;
 
 	private String region;
 

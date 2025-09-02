@@ -54,8 +54,14 @@ public class ItemService {
 	// 메인 최근 상품
 	public Page<ItemCardDto> getMainItems(int page, int size) {
 		Pageable pageable = PageRequest.of(page, size, Sort.by("created").descending());
-		Page<Item> itemsPage = itemRepository.findByStatus(ItemSellStatus.SELL, pageable);
+		Page<Item> itemsPage = itemRepository.findAll(pageable);
 		return itemsPage.map(this::toItemCardDto);
+	}
+
+	// 상품 ID로 조회
+	public Item getItemById(Long itemId) {
+		return itemRepository.findById(itemId)
+				.orElseThrow(() -> new EntityNotFoundException("상품을 찾을 수 없습니다."));
 	}
 
 	// 마이페이지 상품
@@ -124,11 +130,29 @@ public class ItemService {
 
 	// 상품 상세
 	@Transactional
-	public ItemDetailDto getItemDetail(Long itemId, Long loginMemberId) {
-		Item item = itemRepository.findById(itemId).orElseThrow(() -> new EntityNotFoundException("상품이 존재하지 않습니다."));
+	public ItemDetailDto getItemDetail(Long itemId, Long memberId) {
+		Item item = itemRepository.findById(itemId)
+				.orElseThrow(() -> new EntityNotFoundException("상품을 찾을 수 없습니다."));
 
+		// 조회수 증가
 		item.increaseViewCount();
 
+		// 좋아요 여부 확인
+		boolean isLiked = false;
+		if (memberId != null) {
+			Member member = memberRepository.findById(memberId).orElse(null);
+			if (member != null) {
+				isLiked = likeRepository.existsByItemAndMember(item, member);
+			}
+		}
+
+		// 찜 수는 likeRepository로 정확히 조회
+		int likeCount = likeRepository.countByItem(item);
+
+		// 판매자 상품 수 계산
+		int sellerItemCount = itemRepository.countBySeller(item.getSeller());
+
+		// 리뷰 목록 조회
 		List<ReviewFormDto> reviews = reviewRepository.findByItemIdOrderByCreatedDesc(itemId).stream()
 				.map(r -> new ReviewFormDto(r.getId(), r.getItem().getName(), r.getItem().getId(),
 						r.getMember().getUsername(), r.getContent(), r.getCreated()))
@@ -136,34 +160,136 @@ public class ItemService {
 
 		List<String> imageUrls = item.getImages().stream().map(ItemImg::getImgUrl).toList();
 
-		boolean isLiked = false;
-		if (loginMemberId != null) {
-			Member member = memberRepository.findById(loginMemberId).orElse(null);
-			if (member != null) {
-				isLiked = likeRepository.existsByItemAndMember(item, member);
-			}
-		}
-
-		// 🔹 찜 수는 likeRepository로 정확히 조회
-		int likeCount = likeRepository.countByItem(item);
-
-		// 🔹 판매자 상품 수 계산 (itemRepository에 해당 메서드 있어야 함)
-		int sellerItemCount = itemRepository.countBySeller(item.getSeller());
-
 		Category childCategory = item.getCategoryId();
 		Category parentCategory = childCategory.getParent();
 
 		Long childCategoryId = item.getCategoryId().getId();
 		Long parentCategoryId = parentCategory != null ? parentCategory.getId() : null;
 
-		return ItemDetailDto.builder().id(item.getId()).name(item.getName()).description(item.getDescription())
-				.price(item.getPrice()).region(item.getRegion())
+		// 현재 사용자가 구매자인지 확인
+		boolean isBuyer = false;
+		if (item.getStatus() == ItemSellStatus.TRADING && item.getBuyer() != null) {
+			isBuyer = item.getBuyer().getId().equals(memberId);
+		}
+
+		return ItemDetailDto.builder()
+				.id(item.getId())
+				.name(item.getName())
+				.description(item.getDescription())
+				.price(item.getPrice())
+				.region(item.getRegion())
 				.sellerName(item.getSeller() != null ? item.getSeller().getUsername() : "Unknown")
 				.sellerId(item.getSeller() != null ? item.getSeller().getId() : null)
-				.parentName(parentCategory != null ? parentCategory.getName() : "없음").childName(childCategory.getName())
-				.childCategoryId(childCategoryId).status(item.getStatus()).parentCategoryId(parentCategoryId)
-				.created(item.getCreated()).viewCount(item.getViewCount()).imgUrls(imageUrls).reviews(reviews)
-				.likeCount(likeCount).sellerItemCount(sellerItemCount).isLiked(isLiked).build();
+				.buyerName(item.getBuyer() != null ? item.getBuyer().getUsername() : null)
+				.buyerId(item.getBuyer() != null ? item.getBuyer().getId() : null)
+				.isBuyer(isBuyer)
+				.parentName(parentCategory != null ? parentCategory.getName() : "없음")
+				.childName(childCategory.getName())
+				.childCategoryId(childCategoryId)
+				.status(item.getStatus())
+				.parentCategoryId(parentCategoryId)
+				.created(item.getCreated())
+				.viewCount(item.getViewCount())
+				.imgUrls(imageUrls)
+				.reviews(reviews)
+				.likeCount(likeCount)
+				.sellerItemCount(sellerItemCount)
+				.isLiked(isLiked)
+				.build();
+	}
+
+	// 구매하기
+	@Transactional
+	public void buyItem(Long itemId, Long buyerId) {
+		Item item = itemRepository.findById(itemId)
+				.orElseThrow(() -> new EntityNotFoundException("상품을 찾을 수 없습니다."));
+
+		if (item.getStatus() != ItemSellStatus.SELL) {
+			throw new IllegalStateException("구매할 수 없는 상품입니다.");
+		}
+
+		Member buyer = memberRepository.findById(buyerId)
+				.orElseThrow(() -> new EntityNotFoundException("구매자 정보를 찾을 수 없습니다."));
+
+		// 본인 상품은 구매할 수 없음
+		if (item.getSeller().getId().equals(buyerId)) {
+			throw new IllegalStateException("본인 상품은 구매할 수 없습니다.");
+		}
+
+		item.setStatus(ItemSellStatus.TRADING);
+		item.setBuyer(buyer);
+		itemRepository.save(item);
+	}
+
+	// 거래중지 (판매자만)
+	@Transactional
+	public void stopTrade(Long itemId, Long sellerId) {
+		Item item = itemRepository.findById(itemId)
+				.orElseThrow(() -> new EntityNotFoundException("상품을 찾을 수 없습니다."));
+
+		if (!item.getSeller().getId().equals(sellerId)) {
+			throw new AccessDeniedException("판매자만 거래를 중지할 수 있습니다.");
+		}
+
+		if (item.getStatus() != ItemSellStatus.TRADING) {
+			throw new IllegalStateException("거래중인 상품만 중지할 수 있습니다.");
+		}
+
+		item.setStatus(ItemSellStatus.STOPPED);
+		itemRepository.save(item);
+	}
+
+	// 거래재개 (판매자만)
+	@Transactional
+	public void resumeTrade(Long itemId, Long sellerId) {
+		Item item = itemRepository.findById(itemId)
+				.orElseThrow(() -> new EntityNotFoundException("상품을 찾을 수 없습니다."));
+
+		if (!item.getSeller().getId().equals(sellerId)) {
+			throw new AccessDeniedException("판매자만 거래를 재개할 수 있습니다.");
+		}
+
+		if (item.getStatus() != ItemSellStatus.STOPPED) {
+			throw new IllegalStateException("거래중지된 상품만 재개할 수 있습니다.");
+		}
+
+		item.setStatus(ItemSellStatus.SELL);
+		item.setBuyer(null); // 구매자 정보 초기화
+		itemRepository.save(item);
+	}
+
+	// 결제완료 처리 (구매자 전용)
+	@Transactional
+	public void completePayment(Long itemId, Long buyerId) {
+		log.info("결제완료 서비스 시작 - 상품ID: {}, 구매자ID: {}", itemId, buyerId);
+		
+		Item item = itemRepository.findById(itemId)
+				.orElseThrow(() -> new EntityNotFoundException("상품을 찾을 수 없습니다."));
+
+		log.info("상품 상태: {}, 구매자: {}", item.getStatus(), item.getBuyer() != null ? item.getBuyer().getId() : "null");
+
+		if (item.getBuyer() == null || !item.getBuyer().getId().equals(buyerId)) {
+			throw new AccessDeniedException("구매자만 결제를 완료할 수 있습니다.");
+		}
+
+		if (item.getStatus() != ItemSellStatus.TRADING) {
+			throw new IllegalStateException("거래중인 상품만 결제를 완료할 수 있습니다.");
+		}
+
+		item.setStatus(ItemSellStatus.COMPLETED);
+		item.setPurchasedAt(LocalDateTime.now());
+		itemRepository.save(item);
+		
+		log.info("상품 상태 변경 완료 - 상품ID: {}, 새 상태: {}", itemId, item.getStatus());
+	}
+
+	// 관리자 상품 삭제 (권한 전용 간편 메서드)
+	@Transactional
+	@PreAuthorize("hasRole('ADMIN')")
+	public void deleteItem(Long itemId) {
+		Item item = itemRepository.findById(itemId)
+				.orElseThrow(() -> new EntityNotFoundException("상품이 없습니다."));
+		itemRepository.delete(item);
 	}
 
 	// 상품 수정 폼 조회

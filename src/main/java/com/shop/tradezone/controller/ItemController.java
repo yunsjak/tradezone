@@ -3,10 +3,12 @@ package com.shop.tradezone.controller;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -19,6 +21,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.shop.tradezone.dto.ItemCardDto;
 import com.shop.tradezone.dto.ItemDetailDto;
@@ -83,9 +86,10 @@ public class ItemController {
 		model.addAttribute("items", items);
 		model.addAttribute("paging", items);
 
+		model.addAttribute("parentId", parentId);
 		model.addAttribute("parentName", categoryService.getCategoryNameById(parentId));
-		model.addAttribute("childName", categoryService.getCategoryNameById(childId));
 		model.addAttribute("childId", childId);
+		model.addAttribute("childName", categoryService.getCategoryNameById(childId));
 
 		return "category"; // 카테고리별 상품 리스트 뷰
 	}
@@ -94,50 +98,125 @@ public class ItemController {
 	@GetMapping("/detail/{id}")
 	public String detailPage(@PathVariable("id") Long id, Model model,
 			@AuthenticationPrincipal MemberPrincipal memberPrincipal) {
-		// 1) 아이템 조회
-		ItemDetailDto itemDetail = itemService.getItemDetail(id, null);
+
+		Long memberId = memberPrincipal != null ? memberPrincipal.getMemberId() : null;
+		ItemDetailDto itemDetail = itemService.getItemDetail(id, memberId);
+
+		// 현재 사용자가 판매자인지 확인
+		boolean isSeller = memberPrincipal != null && memberPrincipal.getMemberId().equals(itemDetail.getSellerId());
+
 		model.addAttribute("item", itemDetail);
-
-		// 2) 로그인한 사용자가 판매자인지 체크
-		boolean isSeller = false;
-		if (memberPrincipal != null) {
-			String loginUser = memberPrincipal.getUsername();
-			isSeller = loginUser.equalsIgnoreCase(itemDetail.getSellerName());
-		}
 		model.addAttribute("isSeller", isSeller);
-
-		// 3) Item 엔티티 직접 조회 (필요하다면 itemRepository 주입 필요)
-		Item item = itemRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("상품이 존재하지 않습니다."));
-
-		// 4) 기존 서비스 메서드로 리뷰 리스트 조회
-		List<ReviewFormDto> reviews = reviewService.getByItem(item);
-
-		// 6) 모델에 리뷰 목록 추가
-		model.addAttribute("reviews", reviews);
-
-		// 7) 빈 리뷰 작성 폼 객체 바인딩
-		model.addAttribute("reviewForm", new ReviewFormDto());
+		model.addAttribute("isBuyer", itemDetail.isBuyer());
+		model.addAttribute("reviews", itemDetail.getReviews());
 
 		return "item";
+	}
+
+	// 구매하기
+	@PostMapping("/buy/{id}")
+	@PreAuthorize("isAuthenticated()")
+	@ResponseBody
+	public ResponseEntity<Map<String, String>> buyItem(@PathVariable("id") Long id,
+			@AuthenticationPrincipal MemberPrincipal memberPrincipal) {
+		try {
+			itemService.buyItem(id, memberPrincipal.getMemberId());
+			return ResponseEntity.ok(Map.of("message", "구매가 완료되었습니다."));
+		} catch (Exception e) {
+			return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+		}
+	}
+
+	// 거래중지
+	@PostMapping("/stop-trade/{id}")
+	@PreAuthorize("isAuthenticated()")
+	@ResponseBody
+	public ResponseEntity<Map<String, String>> stopTrade(@PathVariable("id") Long id,
+			@AuthenticationPrincipal MemberPrincipal memberPrincipal) {
+		try {
+			itemService.stopTrade(id, memberPrincipal.getMemberId());
+			return ResponseEntity.ok(Map.of("message", "거래가 중지되었습니다."));
+		} catch (Exception e) {
+			return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+		}
+	}
+
+	// 거래재개
+	@PostMapping("/resume-trade/{id}")
+	@PreAuthorize("isAuthenticated()")
+	@ResponseBody
+	public ResponseEntity<Map<String, String>> resumeTrade(@PathVariable("id") Long id,
+			@AuthenticationPrincipal MemberPrincipal memberPrincipal) {
+		try {
+			itemService.resumeTrade(id, memberPrincipal.getMemberId());
+			return ResponseEntity.ok(Map.of("message", "거래가 재개되었습니다."));
+		} catch (Exception e) {
+			return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+		}
+	}
+
+	// 결제 페이지 조회
+	@GetMapping("/payment/{id}")
+	@PreAuthorize("isAuthenticated()")
+	public String showPaymentPage(@PathVariable("id") Long id, Model model,
+			@AuthenticationPrincipal MemberPrincipal memberPrincipal) {
+		try {
+			ItemDetailDto itemDetail = itemService.getItemDetail(id, memberPrincipal.getMemberId());
+			model.addAttribute("item", itemDetail);
+			model.addAttribute("tossprice", itemDetail.getPrice());
+			return "toss/payment";
+		} catch (Exception e) {
+			return "redirect:/items/" + id + "?error=payment";
+		}
+	}
+
+	// 결제완료 처리
+	@PostMapping("/complete-payment/{id}")
+	@PreAuthorize("isAuthenticated()")
+	@ResponseBody
+	public ResponseEntity<Map<String, String>> completePayment(@PathVariable("id") Long id,
+			@AuthenticationPrincipal MemberPrincipal memberPrincipal) {
+		try {
+					itemService.completePayment(id, memberPrincipal.getMemberId());
+			return ResponseEntity.ok(Map.of("message", "결제가 완료되었습니다."));
+		} catch (Exception e) {
+			log.error("결제완료 처리 실패 - 상품ID: {}, 에러: {}", id, e.getMessage(), e);
+			return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+		}
 	}
 
 	// 상품 등록 폼 조회
 	@PreAuthorize("isAuthenticated()")
 	@GetMapping("/new")
-	public String showCreateForm(Model model) {
-		model.addAttribute("itemFormDto", new ItemFormDto());
+	public String showCreateForm(@RequestParam(value = "parentId", required = false) Long parentId,
+			@RequestParam(value = "childId", required = false) Long childId, Model model) {
+		
+		ItemFormDto form = ItemFormDto.builder()
+			.parentCategoryId(parentId)
+			.childCategoryId(childId)
+			.build();
+		
+		model.addAttribute("itemFormDto", form);
 
 		// 부모 카테고리 리스트 세팅
 		List<Category> parents = categoryService.findParentCategoriesWithChildren();
 		model.addAttribute("parents", parents);
 
-		// 기본 자식 카테고리 (첫 부모의 자식들)
-		Long defaultParentId = parents.isEmpty() ? null : parents.get(0).getId();
-		List<Category> children = (defaultParentId == null) ? List.of()
-				: categoryService.findChildrenByParentId(defaultParentId);
+		// 자식 카테고리: parentId가 있으면 해당 부모의 자식들, 없으면 빈 리스트
+		List<Category> children = List.of();
+		if (parentId != null) {
+			children = categoryService.findChildrenByParentId(parentId);
+		}
 		model.addAttribute("children", children);
 
 		return "register"; // 등록 폼 뷰 이름
+	}
+
+	// 자식 카테고리 조회 API
+	@GetMapping("/categories/children")
+	@ResponseBody
+	public List<Category> getChildrenByParent(@RequestParam("parentId") Long parentId) {
+		return categoryService.findChildrenByParentId(parentId);
 	}
 
 	// 상품 등록 처리
@@ -145,9 +224,6 @@ public class ItemController {
 	@PostMapping("/new")
 	public String createItem(@Valid @ModelAttribute ItemFormDto itemFormDto, BindingResult bindingResult, Model model,
 			@AuthenticationPrincipal MemberPrincipal memberPrincipal) throws IOException {
-
-		log.info("📥 POST /new 요청 진입");
-		log.info("상품명: {}", itemFormDto.getName());
 
 		if (bindingResult.hasErrors()) {
 			model.addAttribute("itemFormDto", itemFormDto);
@@ -176,9 +252,6 @@ public class ItemController {
 			return "register";
 		}
 
-		log.info("parentCategoryId: {}", itemFormDto.getParentCategoryId());
-		log.info("childCategoryId: {}", itemFormDto.getChildCategoryId());
-
 		// TODO: 로그인한 회원 ID 받아와서 넣기 (현재 하드코딩)
 		Long userId = memberPrincipal.getMemberId();
 		itemService.createItem(itemFormDto, userId);
@@ -202,9 +275,8 @@ public class ItemController {
 
 		// 부모 카테고리(teams)와 자식 카테고리(품목)를 분리하여 모델에 전달
 		List<Category> parents = categoryService.findParentCategoriesWithChildren();
-		Long defaultParentId = parents.isEmpty() ? null : parents.get(0).getId();
-		List<Category> children = defaultParentId == null ? List.of()
-				: categoryService.findChildrenByParentId(defaultParentId);
+		List<Category> children = categoryService.findChildrenByParentId(parentId); // 해당 부모의 자식들만 로드
+		
 		model.addAttribute("parents", parents); // 부모 카테고리 목록
 		model.addAttribute("children", children); // 자식 카테고리 목록
 
@@ -223,8 +295,6 @@ public class ItemController {
 	public String updateItem(@AuthenticationPrincipal MemberPrincipal memberPrincipal, @PathVariable("id") Long id,
 			@Valid @ModelAttribute ItemUpdateDto updateDto, BindingResult bindingResult, Model model)
 			throws IOException {
-		log.info("자식" + updateDto.getChildCategoryId());
-		log.info("부모" + updateDto.getParentCategoryId());
 
 		Long memberId = memberPrincipal.getMemberId();
 		Collection<? extends GrantedAuthority> authorities = memberPrincipal.getAuthorities();

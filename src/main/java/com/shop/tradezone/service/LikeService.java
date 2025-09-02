@@ -11,7 +11,9 @@ import com.shop.tradezone.entity.Member;
 import com.shop.tradezone.repository.LikeRepository;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @RequiredArgsConstructor
 @Service
 public class LikeService {
@@ -19,8 +21,11 @@ public class LikeService {
 	private final LikeRepository likeRepository;
 
 	// 찜토글@return true면 ON(생성됨), false면 OFF(삭제됨)
+	@Transactional
 	public boolean toggle(Item item, Member member) {
-		if (likeRepository.existsByItemAndMember(item, member)) {
+		boolean exists = likeRepository.existsByItemAndMember(item, member);
+		
+		if (exists) {
 			// 이미 찜되어 있으면 해제(OFF)
 			likeRepository.deleteByItemAndMember(item, member);
 			return false;

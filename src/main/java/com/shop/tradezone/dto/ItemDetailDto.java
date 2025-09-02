@@ -28,6 +28,11 @@ public class ItemDetailDto {
 	// 판매자 정보
 	private String sellerName;
 	private Long sellerId;
+	
+	// 구매자 정보
+	private String buyerName;
+	private Long buyerId;
+	private boolean isBuyer; // 현재 사용자가 구매자인지
 
 	// 카테고리, 상태
 	private String parentName;

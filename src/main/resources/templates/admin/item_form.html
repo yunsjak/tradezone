@@ -53,7 +53,8 @@
                         <select id="parentCategoryId" th:field="*{parentCategoryId}" required>
                             <option th:each="parent : ${parents}"
                                     th:value="${parent.id}"
-                                    th:text="${parent.name}"></option>
+                                    th:text="${parent.name}"
+                                    th:selected="${parent.id == itemUpdateDto.parentCategoryId}"></option>
                         </select>
                         <div class="text-danger" th:if="${#fields.hasErrors('parentCategoryId')}" th:errors="*{parentCategoryId}"></div>
                     </td>
@@ -61,11 +62,11 @@
 				<tr>
 				  <td><label for="childCategoryId">카테고리(품목)</label></td>
 				  <td class="category-select">
-				    <select id="childCategoryId" th:field="*{childCategoryId}" required>
+				    <select id="childCategoryId" th:field="*{childCategoryId}" required th:attr="data-selected-id=*{childCategoryId}">
 				      <option th:each="child : ${children}"
 				              th:value="${child.id}"
 				              th:text="${child.name}"
-				              th:selected="${child.id == selectedChildName}"></option>
+				              th:selected="${child.id} == *{childCategoryId}"></option>
 				    </select>
 				    <div class="text-danger" th:if="${#fields.hasErrors('childCategoryId')}" th:errors="*{childCategoryId}"></div>
 				  </td>

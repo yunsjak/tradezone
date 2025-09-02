@@ -1,6 +1,7 @@
 package com.shop.tradezone.controller;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -26,6 +27,7 @@ import com.shop.tradezone.dto.MemberFormDto;
 import com.shop.tradezone.dto.MemberUpdateDto;
 import com.shop.tradezone.service.MemberPrincipal;
 import com.shop.tradezone.service.MemberService;
+import com.shop.tradezone.dto.MyPageDto;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
@@ -103,6 +105,12 @@ public class MemberController {
 
 		model.addAttribute("email", email); // 화면 표시용
 		model.addAttribute("memberUpdateDto", memberService.getMemberInfoByEmail(email));
+		// 마이페이지 부가 데이터(상품/찜/후기)도 함께 전달
+		try {
+			model.addAttribute("myPageData", memberService.getMyPageData(email));
+		} catch (Exception ignored) {
+			model.addAttribute("myPageData", null);
+		}
 
 		return "mypage";
 	}
@@ -110,9 +118,13 @@ public class MemberController {
 	@PreAuthorize("isAuthenticated()")
 	@PostMapping("/mypage")
 	public String modify(@Valid MemberUpdateDto dto, BindingResult bindingResult,
-			@AuthenticationPrincipal MemberPrincipal memberPrincipal, RedirectAttributes redirectAttributes) {
+			@AuthenticationPrincipal MemberPrincipal memberPrincipal, RedirectAttributes redirectAttributes, Model model) {
 
 		if (bindingResult.hasErrors()) {
+			String email = memberPrincipal.getUsername();
+			model.addAttribute("email", email);
+			model.addAttribute("memberUpdateDto", dto);
+			model.addAttribute("myPageData", memberService.getMyPageData(email));
 			return "mypage";
 		}
 
@@ -122,6 +134,10 @@ public class MemberController {
 		} catch (Exception e) {
 			e.printStackTrace();
 			bindingResult.reject("modifyFailed", "오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+			String email = memberPrincipal.getUsername();
+			model.addAttribute("email", email);
+			model.addAttribute("memberUpdateDto", dto);
+			model.addAttribute("myPageData", memberService.getMyPageData(email));
 			return "mypage";
 		}
 
@@ -136,10 +152,10 @@ public class MemberController {
 
 		String email = principal.getUsername();
 
-		MemberFormDto myPageData = memberService.getMyPageData(email);
+		MyPageDto myPageData = memberService.getMyPageData(email);
 
 		if (myPageData == null)
-			myPageData = new MemberFormDto();
+			myPageData = new MyPageDto();
 
 		if (myPageData.getItems() == null)
 			myPageData.setItems(new ArrayList<>());

@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 
 import com.shop.tradezone.entity.Item;
 import com.shop.tradezone.entity.Like;
+import com.shop.tradezone.entity.ItemImg;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -32,5 +33,10 @@ public class LikeFormDto {
 		this.itemName = item.getName();
 		this.price = item.getPrice();
 		this.created = item.getCreated();
+		
+		// 이미지 URL 설정 (첫 번째 이미지 사용) - ItemCardDto와 동일한 방식
+		if (item.getImages() != null && !item.getImages().isEmpty()) {
+			this.imgUrl = item.getImages().get(0).getImgUrl();
+		}
 	}
 }

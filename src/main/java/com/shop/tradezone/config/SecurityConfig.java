@@ -2,8 +2,7 @@ package com.shop.tradezone.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -12,6 +11,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+
+import com.shop.tradezone.service.MemberSecurityService;
 
 @Configuration
 @EnableWebSecurity
@@ -24,13 +25,8 @@ public class SecurityConfig {
 				// URL 별 권한 설정
 				.authorizeHttpRequests(auth -> auth
 						.requestMatchers("/", "/member/join", "/member/check-username", "/member/login",
-<<<<<<< Updated upstream
 								"/member/updateidentity", "/member/resetpassword", "/**", "/notice/**", "/css/**",
 								"/js/**", "/images/**", "/api/items/main", "/callback", "/member/passwordcode", "/**")
-=======
-								"/member/updateidentity", "/member/resetpassword", "/member/passwordcode", "/notice/**",
-								"/css/**", "/js/**", "/images/**", "/api/items/main", "/callback", "/reviews/**")
->>>>>>> Stashed changes
 						.permitAll().requestMatchers("/admin/**").hasRole("ADMIN")
 						.requestMatchers("/member/**", "/register/**", "/chat/**", "/callback", "/items/**",
 								"/reviews/**")
@@ -54,10 +50,12 @@ public class SecurityConfig {
 		return new BCryptPasswordEncoder();
 	}
 
-	// 인증과 인가(권한) 부여 처리
 	@Bean
-	AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration)
-			throws Exception {
-		return authenticationConfiguration.getAuthenticationManager();
+	DaoAuthenticationProvider daoAuthenticationProvider(MemberSecurityService memberSecurityService,
+			PasswordEncoder passwordEncoder) {
+		DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+		provider.setUserDetailsService(memberSecurityService);
+		provider.setPasswordEncoder(passwordEncoder);
+		return provider;
 	}
 }

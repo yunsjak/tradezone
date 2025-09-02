@@ -22,6 +22,7 @@ import com.shop.tradezone.dto.ItemCardDto;
 import com.shop.tradezone.dto.LikeFormDto;
 import com.shop.tradezone.dto.MemberFormDto;
 import com.shop.tradezone.dto.MemberUpdateDto;
+import com.shop.tradezone.dto.MyPageDto;
 import com.shop.tradezone.dto.ReviewFormDto;
 import com.shop.tradezone.entity.Member;
 import com.shop.tradezone.repository.MemberRepository;
@@ -98,17 +99,41 @@ public class MemberService {
 
 	// 상품목록, 찜목록, 후기목록 조회
 	@Transactional(readOnly = true)
-	public MemberFormDto getMyPageData(String email) {
+	public MyPageDto getMyPageData(String email) {
 
-		Member member = memberRepository.findByEmail(email)
-				.orElseThrow(() -> new EntityNotFoundException("회원 정보를 찾을 수 없습니다."));
+		MyPageDto dto = new MyPageDto();
+		dto.setEmail(email);
+		dto.setItems(List.of());
+		dto.setLikes(List.of());
+		dto.setReview(List.of());
 
-		MemberFormDto dto = new MemberFormDto();
+		try {
+			Member member = memberRepository.findByEmail(email)
+					.orElseThrow(() -> new EntityNotFoundException("회원 정보를 찾을 수 없습니다."));
 
-		dto.setEmail(member.getEmail());
-		dto.setItems(member.getItems().stream().map(ItemCardDto::new).toList());
-		dto.setLikes(member.getLikes().stream().map(LikeFormDto::new).toList());
-		dto.setReview(member.getReviews().stream().map(ReviewFormDto::new).toList());
+			dto.setEmail(member.getEmail());
+			
+			// 상품 목록
+			if (member.getItems() != null) {
+				dto.setItems(member.getItems().stream().map(ItemCardDto::new).toList());
+			}
+			
+			// 찜 목록
+			if (member.getLikes() != null) {
+				dto.setLikes(member.getLikes().stream().map(like -> {
+					LikeFormDto likeDto = new LikeFormDto(like);
+					return likeDto;
+				}).toList());
+			}
+			
+			// 후기 목록
+			if (member.getReviews() != null) {
+				dto.setReview(member.getReviews().stream().map(ReviewFormDto::new).toList());
+			}
+
+		} catch (Exception e) {
+			log.error("마이페이지 데이터 조회 실패: {}", e.getMessage(), e);
+		}
 
 		return dto;
 	}
@@ -121,9 +146,6 @@ public class MemberService {
 
 		dto.setEmail(member.getEmail());
 		dto.setPhone(member.getPhone());
-
-		log.info(dto.getEmail());
-		log.info(dto.getPhone());
 
 		return dto;
 	}

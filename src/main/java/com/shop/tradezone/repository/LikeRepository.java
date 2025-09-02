@@ -11,7 +11,6 @@ import com.shop.tradezone.entity.Member;
 
 @Repository
 public interface LikeRepository extends JpaRepository<Like, Long> {
-	boolean existsByItemIdAndMemberId(Item item, Member member);
 
 	Optional<Like> findByItemAndMember(Item item, Member member);
 

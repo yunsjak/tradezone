@@ -48,7 +48,7 @@
 				</form>
 
 				<div class="sub-bar">
-					<a th:href="@{/items/new}">판매하기</a> <a th:href="@{/chat}">채팅하기</a>
+					<a id="sellButton" th:href="@{/items/new}">판매하기</a> <a th:href="@{/chat}">채팅하기</a>
 					<a th:href="@{/notice}">공지사항</a>
 				</div>
 			</div>
@@ -72,6 +72,23 @@
         let currentCardIndex = 0;
         let singleCardTimer = null;
         const singleCardDelay = 6000; // 7초
+
+        // 판매하기 버튼 링크 동적 설정
+        document.addEventListener('DOMContentLoaded', function() {
+            const sellButton = document.getElementById('sellButton');
+            if (sellButton) {
+                const currentPath = window.location.pathname;
+                const categoryMatch = currentPath.match(/\/items\/category\/(\d+)\/(\d+)/);
+                
+                if (categoryMatch) {
+                    const parentId = categoryMatch[1];
+                    const childId = categoryMatch[2];
+                    sellButton.href = `/items/new?parentId=${parentId}&childId=${childId}`;
+                } else {
+                    sellButton.href = '/items/new';
+                }
+            }
+        });
 
         function getSingleCardStatus(status) {
           switch (status) {

@@ -69,15 +69,19 @@
 <!-- AJAX 및 슬릭 초기화 -->
 <script layout:fragment="script" type="text/javascript">
 $(function() {
-	console.log("jQuery works!");
-    $("body").append("<p>jQuery is loaded successfully.</p>");
 
     $.ajax({
         url: '/api/items/main',
         method: 'GET',
         success: function (items) {
+            console.log('[/api/items/main] items:', items);
             const $slider = $('.product-slider');
             $slider.empty(); // 기존 카드 제거
+
+            if (!items || items.length === 0) {
+                $slider.append('<div style="text-align:center; padding: 2rem; color: #666;">최근 등록된 상품이 없습니다.</div>');
+                return;
+            }
 
             items.forEach(item => {
                 const isSoldOut = item.status === 'SOLD_OUT';

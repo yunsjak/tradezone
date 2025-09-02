@@ -4,6 +4,9 @@
 		layout:decorate="~{layout}">
 <head>
 	<meta charset="UTF-8">
+	<!-- CSRF (fetch 전송용) -->
+	<meta name="_csrf" th:content="${_csrf.token}" />
+	<meta name="_csrf_header" th:content="${_csrf.headerName}" />
 	<link rel="stylesheet" type="text/css" th:href="@{/css/page/item.css}">
 	<link rel="stylesheet"
 		href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
@@ -19,6 +22,7 @@
 <body>
 	<div class="content">
 		<div layout:fragment="content">
+			<div class="loading-overlay" id="payLoading"><div class="loading-spinner"></div></div>
 			<div class="wrapper">
 				<div class="wrap">
 					<div class="product">
@@ -78,22 +82,31 @@
 											<p th:text="${item.description}"></p>
 										</div>
 									</div>
-									<div class="action-buttons" th:if="${isSeller}">
-									  <div class="action-item">
-									    <i class="fa-solid fa-pen"></i>
-									    <a th:href="@{/items/edit/{id}(id=${id})}" class="action-label">상품수정</a>
-									  </div>
-									
-									  <div class="divider"></div>
-									
-									  <div class="action-item">
-									    <i class="fa-regular fa-circle-check"></i>
-									    <div class="action-label">상태변경</div>
-									  </div>
+									<div class="action-button" th:if="${isSeller} and ${item.status.name() != 'COMPLETED'}">
+										<button type="button" class="btn" th:onclick="|location.href='@{/items/edit/{id}(id=${item.id})}'|">상품수정</button>
 									</div>
-									<div class="action-button" th:if="${!isSeller}">
-										<button type="button" class="btn">채팅하기</button>
-										<button type="submit">결제하기</button>
+									
+									<!-- 판매자 거래중지/재개 버튼을 동일 버튼 UI로 이동 -->
+									<!-- 제거: 아이콘/인라인 색상 -->
+									
+									<div class="action-button" th:if="${item.status.name() != 'COMPLETED'}">
+										<!-- 채팅하기: 비판매자만 (자기 자신 상품에는 채팅 불가), 로그인한 사용자만 -->
+										<button type="button" class="chat-btn btn" th:if="${!isSeller and #authorization.expression('isAuthenticated()')}">채팅하기</button>
+										<!-- 구매하기: 판매중에만, 비판매자만, 로그인한 사용자만 -->
+										<button type="button" class="buy-btn btn" th:if="${!isSeller and #authorization.expression('isAuthenticated()') and item.status.name() == 'SELL'}">구매하기</button>
+										<!-- 결제하기: 구매자이고 거래중일 때만, 로그인한 사용자만 -->
+										<button type="button" class="payment-btn btn" th:if="${!isSeller and #authorization.expression('isAuthenticated()') and item.status.name() == 'TRADING' and isBuyer}">결제하기</button>
+										<!-- 거래중지: 판매자이고 거래중일 때만 -->
+										<button type="button" class="stop-trade-btn btn" th:if="${isSeller and item.status.name() == 'TRADING'}">거래중지</button>
+										<!-- 거래재개: 판매자이고 중지상태일 때만 -->
+										<button type="button" class="resume-trade-btn btn" th:if="${isSeller and item.status.name() == 'STOPPED'}">거래재개</button>
+										<!-- 관리자 삭제 -->
+										<button type="button" class="admin-delete-btn btn" th:if="${#authorization.expression('hasRole(''ADMIN'')')}" th:data-item-id="${item.id}">삭제하기</button>
+									</div>
+									
+									<!-- 구매완료 상태에서도 채팅하기 버튼 표시 (비판매자만, 로그인한 사용자만) -->
+									<div class="action-button" th:if="${item.status.name() == 'COMPLETED' and !isSeller and #authorization.expression('isAuthenticated()')}">
+										<button type="button" class="chat-btn btn">채팅하기</button>
 									</div>
 								</div>
 							</div>
@@ -105,12 +118,18 @@
 					<div class="view">
 						<div class="productview">상품 후기 <span class="viewcount" th:text="${item.reviews.size()}"></span></div>
 						
-						<form action="/reviews/item/create" method="POST">
-						    <!-- <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" /> -->
+						<!-- 상품후기 작성 폼: 로그인한 사용자만 -->
+						<form action="/reviews/item/create" method="POST" th:if="${#authorization.expression('isAuthenticated()')}">
+						    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
 						 	<textarea name="content" placeholder="리뷰 내용을 입력하세요"></textarea>
 						    <button type="submit">작성</button>
 						    <input hidden name="itemId" th:value="${item.id}" />
 						</form>
+						
+						<!-- 비회원에게는 로그인 안내 메시지 -->
+						<div th:if="${!#authorization.expression('isAuthenticated()')}" class="login-notice">
+							<p>상품후기를 작성하려면 <a th:href="@{/member/login}">로그인</a>이 필요합니다.</p>
+						</div>
 						
 						<div class="review-section">
 							<div th:each="reviews : ${reviews}">
@@ -132,23 +151,113 @@
 	</div>
 	<script layout:fragment="script" type="text/javascript">
 	    document.addEventListener("DOMContentLoaded", () => {
-	      const heart = document.querySelector(".heart");     // 하트 아이콘
-	      const likeCount = document.querySelector(".like-count"); // 좋아요 숫자
-	      let liked = false; // 상태 저장 (※ 테스트용, 나중엔 서버에서 가져옴)
-	
-	      heart.addEventListener("click", () => {
-	        liked = !liked; // 상태 반전
-	
-	        if (liked) {
-	          heart.classList.remove("fa-regular");
-	          heart.classList.add("fa-solid");
-	          likeCount.textContent = parseInt(likeCount.textContent) + 1;
-	        } else {
-	          heart.classList.remove("fa-solid");
-	          heart.classList.add("fa-regular");
-	          likeCount.textContent = parseInt(likeCount.textContent) - 1;
-	        }
-	      });
+	      const csrfToken = document.querySelector('meta[name="_csrf"]')?.content || '';
+	      const itemId = window.location.pathname.split('/').pop();
+
+	      // 하트 클릭 이벤트
+	      const heart = document.querySelector(".heart");
+	      const likeCount = document.querySelector(".like-count");
+	      
+	      // 찜 상태에 따른 하트 초기화
+	      const isLiked = /*[[${item.isLiked}]]*/ false;
+	      if (isLiked) {
+	        heart.classList.remove("fa-regular");
+	        heart.classList.add("fa-solid");
+	      } else {
+	        heart.classList.remove("fa-solid");
+	        heart.classList.add("fa-regular");
+	      }
+	      
+	      if (heart && likeCount) {
+	        heart.addEventListener("click", () => {
+	          // 로그인하지 않은 경우 로그인 페이지로 이동
+	          if (!csrfToken) {
+	            alert('찜 기능을 사용하려면 로그인이 필요합니다.');
+	            window.location.href = '/member/login';
+	            return;
+	          }
+	          
+	          // 찜 API 호출
+	          fetch(`/item/${itemId}/like`, {
+	            method: 'POST',
+	            headers: { 'X-CSRF-TOKEN': csrfToken }
+	          })
+	          .then(r => r.json())
+	          .then(data => {
+	            // UI 업데이트
+	            if (data.liked) {
+	              heart.classList.remove("fa-regular");
+	              heart.classList.add("fa-solid");
+	            } else {
+	              heart.classList.remove("fa-solid");
+	              heart.classList.add("fa-regular");
+	            }
+	            likeCount.textContent = data.count;
+	          })
+	          .catch(error => {
+	            console.error('찜 처리 실패:', error);
+	            alert('찜 처리에 실패했습니다.');
+	          });
+	        });
+	      }
+
+	      // 구매하기
+	      const buyBtn = document.querySelector('.buy-btn');
+	      if (buyBtn) {
+	        buyBtn.addEventListener('click', () => {
+	          if (!confirm('구매하시겠습니까?')) return;
+	          fetch(`/items/buy/${itemId}`, { method: 'POST', headers: { 'X-CSRF-TOKEN': csrfToken }})
+	            .then(r => r.json()).then(d => {
+	              if (d.message) { alert('구매진행중으로 전환되었습니다.'); location.reload(); }
+	              else { alert(d.error || '구매 처리 실패'); }
+	            }).catch(() => alert('네트워크 오류'));
+	        });
+	      }
+
+	      // 결제하기: 팝업 오픈 + 로딩 오버레이 표시
+	      const paymentBtn = document.querySelector('.payment-btn');
+	      if (paymentBtn) {
+	        paymentBtn.addEventListener('click', () => {
+	          const overlay = document.getElementById('payLoading');
+	          if (overlay) overlay.style.display = 'flex';
+	          const w = 520, h = 760;
+	          const left = (window.screen.width - w) / 2;
+	          const top = (window.screen.height - h) / 2;
+	          const popup = window.open(`/items/payment/${itemId}?itemId=${itemId}`, 'tossPay', `width=${w},height=${h},left=${left},top=${top}`);
+	          // 팝업 닫힘 감지 제거 - 중복 리다이렉트 방지
+	        });
+	      }
+
+	      // 거래중지/재개
+	      const stopBtn = document.querySelector('.stop-trade-btn');
+	      if (stopBtn) {
+	        stopBtn.addEventListener('click', () => {
+	          if (!confirm('거래를 중지하시겠습니까?')) return;
+	          fetch(`/items/stop-trade/${itemId}`, { method: 'POST', headers: { 'X-CSRF-TOKEN': csrfToken }})
+	            .then(r => r.json()).then(d => { if (d.message) location.reload(); else alert(d.error || '실패'); });
+	        });
+	      }
+	      const resumeBtn = document.querySelector('.resume-trade-btn');
+	      if (resumeBtn) {
+	        resumeBtn.addEventListener('click', () => {
+	          if (!confirm('거래를 재개하시겠습니까?')) return;
+	          fetch(`/items/resume-trade/${itemId}`, { method: 'POST', headers: { 'X-CSRF-TOKEN': csrfToken }})
+	            .then(r => r.json()).then(d => { if (d.message) location.reload(); else alert(d.error || '실패'); });
+	        });
+	      }
+
+	      // 관리자 삭제
+	      const adminDeleteBtn = document.querySelector('.admin-delete-btn');
+	      if (adminDeleteBtn) {
+	        adminDeleteBtn.addEventListener('click', () => {
+	          if (!confirm('정말 삭제하시겠습니까?')) return;
+	          fetch(`/items/admin/delete/${itemId}`, { method: 'POST', headers: { 'X-CSRF-TOKEN': csrfToken }})
+	            .then(r => r.json()).then(d => {
+	              if (d.message) { alert('삭제되었습니다.'); window.location.href = '/admin/items'; }
+	              else { alert(d.error || '삭제 실패'); }
+	            });
+	        });
+	      }
 	    });
 	  </script>
 </body>
