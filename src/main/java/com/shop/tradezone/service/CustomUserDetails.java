@@ -8,19 +8,22 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import com.shop.tradezone.entity.Member;
+import com.shop.tradezone.repository.MemberRepository;
 
 public class CustomUserDetails implements UserDetails {
 
 	private final Member member;
+	private final MemberRepository memberRepository;
 
 	public CustomUserDetails(Member member) {
+		this.memberRepository = null;
 		this.member = member;
 	}
 
 	@Override
 	public Collection<? extends GrantedAuthority> getAuthorities() {
 		// Member의 Role을 권한으로 변환해서 리턴
-		return List.of(new SimpleGrantedAuthority(member.getRole().name()));
+		return List.of(new SimpleGrantedAuthority("ROLE_" + member.getRole().name()));
 	}
 
 	@Override

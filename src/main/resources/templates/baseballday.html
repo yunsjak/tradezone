@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="ko" layout:decorate="~{layout}">
+<head>
+<meta charset="UTF-8">
+<title>KBO 경기 일정</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" type="text/css" th:href="@{/css/page/baseballday.css}">
+<link rel="stylesheet" type="text/css" th:href="@{/css/common/navbar.css}" />
+</head>
+<body>
+	<div layout:fragment="content">
+		<div class="container py-2">
+
+			<div class="row mb-2 justify-content-center">
+				<div class="col-md-4">
+					<input type="month" id="monthPicker" class="form-control">
+				</div>
+				<div class="col-md-2 d-flex align-items-end">
+					<button class="btn btn-primary w-100" onclick="loadSchedule()">조회</button>
+				</div>
+			</div>
+
+			<div class="slider-container">
+				<button class="slider-btn left" onclick="scrollToday(-1)">‹</button>
+				<div class="slider-wrapper" id="todaySlider">
+					<div class="text-center text-muted p-2 w-100">오늘 경기 정보를 불러오는
+						중입니다...</div>
+				</div>
+				<button class="slider-btn right" onclick="scrollToday(1)">›</button>
+			</div>
+
+			<div class="form-check form-switch mb-2">
+				<input class="form-check-input" type="checkbox"
+					id="showUpcomingGames"> <label class="form-check-label"
+					for="showUpcomingGames">예정인 경기 표시</label>
+			</div>
+
+			<div class="table-responsive">
+				<table
+					class="table table-bordered table-hover bg-white shadow-sm mb-1">
+					<thead class="table-light text-center">
+						<tr>
+							<th>날짜</th>
+							<th>시간</th>
+							<th>홈팀</th>
+							<th>원정팀</th>
+							<th>구장</th>
+							<th>중계</th>
+							<th>회차/상태</th>
+						</tr>
+					</thead>
+					<tbody id="scheduleBody">
+						<tr>
+							<td colspan="7" class="text-center text-muted">데이터를 불러오는
+								중입니다...</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+
+			 <div class="d-flex justify-content-center mt-1">
+				<nav>
+					<ul class="pagination pagination-sm mb-0" id="pagination"></ul>
+				</nav>
+			</div> 		
+		</div>
+
+		<script>
+    const defaultLogo = "https://via.placeholder.com/40?text=팀";
+    const broadcastLinks = { "SPOTV2":"https://www.spotvnow.co.kr/","SBS SPORTS":"https://www.sbs.co.kr/tv/sports/","MBC SPORTS+":"https://m.imbc.com/onair/Sports/iMBC1/","KBS 2TV":"https://sports.kbs.co.kr/","SPOTV":"https://onair.kbs.co.kr/index.html?sname=onair&stype=live&ch_code=11&ch_type=globalList/","KBS N SPORTS":"https://sports.kbs.co.kr/" };
+
+    const formatDate = dateStr => dateStr?.length===8 ? `${dateStr.slice(0,4)} ${dateStr.slice(4,6)}/${dateStr.slice(6,8)}` : "날짜 없음";
+    const formatTime = t => t?.length===4 ? `${t.slice(0,2)}:${t.slice(2)}` : t??"시간 없음";
+
+    const getGameStatus = status => { switch(status){ case "BEFORE": return "경기 전"; case "PLAY": return "진행중"; case "END": return "종료됨"; case "CANCEL": return "취소됨"; default: return ""; } }
+    const getStatusClass = status=>status;
+
+    function parsePeriod(p){ if(!p) return ""; if(p.startsWith("T") || p.startsWith("B")) return `${parseInt(p.slice(1),10)}회차`; return p; }
+    function renderPeriodStatus(game){ const statusText = getGameStatus(game.gameStatus); if(game.gameStatus==="PLAY") return `${parsePeriod(game.periodType)} ${statusText}`; return statusText; }
+
+    const createRow = game=>{
+        const broadcastName = game.op?.broadcast ?? "중계 없음";
+        const broadcastUrl = broadcastLinks[broadcastName]??"#";
+
+        let homeScore = game.homeResult;
+        let awayScore = game.awayResult;
+
+        if (game.gameStatus === "BEFORE" || game.gameStatus === "CANCEL") {
+            homeScore = '';
+            awayScore = '';
+        }
+
+        const homeScoreInt = parseInt(homeScore) || 0;
+        const awayScoreInt = parseInt(awayScore) || 0;
+
+        let homeScoreClass = "score-table";
+        let awayScoreClass = "score-table";
+
+        if(game.gameStatus === "END"){
+            if(homeScoreInt > awayScoreInt){
+                homeScoreClass = "win-score-table";
+                awayScoreClass = "lose-score-table";
+            } else if(homeScoreInt < awayScoreInt){
+                homeScoreClass = "lose-score-table";
+                awayScoreClass = "win-score-table";
+            }
+        }
+
+        return `<tr>
+<td class="text-center">${formatDate(game.startDate)}</td>
+<td class="text-center">${formatTime(game.startTime)}</td>
+
+<td>
+  <div class="d-flex align-items-center justify-content-center">
+    <div class="d-flex align-items-center me-4">
+      <img src="${game.homeTeamImageUrl??defaultLogo}" class="team-logo" onerror="this.src='${defaultLogo}'">
+      <div class="ms-2 team-name-table">${game.homeTeamName??"홈팀"}</div>
+    </div>
+    <span class="${homeScoreClass}">${homeScore}</span>
+  </div>
+</td>
+
+<td>
+  <div class="d-flex align-items-center justify-content-center">
+    <span class="${awayScoreClass}">${awayScore}</span>
+    <div class="d-flex align-items-center ms-4">
+      <div class="me-2 team-name-table">${game.awayTeamName??"원정팀"}</div>
+      <img src="${game.awayTeamImageUrl??defaultLogo}" class="team-logo" onerror="this.src='${defaultLogo}'">
+    </div>
+  </div>
+</td>
+
+<td><a href="#" onclick="openMapPopup('${game.fieldName??''}')" class="stadium-link">${game.fieldName??"구장"}</a></td>
+<td class="text-center"><a href="${broadcastUrl}" target="_blank" class="text-decoration-none text-dark">${broadcastName}</a></td>
+<td class="text-center"><span class="status ${getStatusClass(game.gameStatus)}">${renderPeriodStatus(game)}</span></td>
+</tr>`;
+    }
+
+    function openMapPopup(stadiumName){ if(!stadiumName) return; window.open(`https://map.kakao.com/?q=${encodeURIComponent(stadiumName)}`, 'mapPopup','width=1000,height=800,scrollbars=yes,resizable=yes'); }
+
+    let allGames = [];
+    let currentFilteredGames = [];
+    const itemsPerPage = 10;
+    const todayStr=new Date().toISOString().slice(0,10).replace(/-/g,"");
+
+    function renderPage(page){ const start=(page-1)*itemsPerPage; const end=start+itemsPerPage; const pageItems=currentFilteredGames.slice(start,end); document.getElementById("scheduleBody").innerHTML=pageItems.map(createRow).join('')||`<tr><td colspan="7" class="text-center text-muted">일정 없음</td></tr>`; renderPagination(page); }
+
+    function renderPagination(currentPage) {
+        const totalPages = Math.ceil(currentFilteredGames.length / itemsPerPage);
+        const pagination = document.getElementById("pagination");
+        pagination.innerHTML = `
+            <div class="pagination-button">
+                ${currentPage > 1 ? `<button onclick="renderPage(${currentPage - 1})">previous</button>` : `<button disabled>previous</button>`}
+                <button class="active" disabled>${currentPage}</button>
+                ${currentPage < totalPages ? `<button onclick="renderPage(${currentPage + 1})">next</button>` : `<button disabled>next</button>`}
+            </div>
+        `;
+    }
+    
+     function renderTodayCards(){
+        const todayGames=allGames.filter(g=>g.startDate===todayStr);
+        const slider=document.getElementById("todaySlider");
+        if(!todayGames.length){ slider.innerHTML=`<div class="text-center text-muted p-2 w-100">오늘 경기가 없습니다.</div>`; updateButtons(); return; }
+
+        slider.innerHTML=todayGames.map(game=>{
+            const isPlay = game.gameStatus==="PLAY";
+            const isEnd = game.gameStatus==="END";
+            let homeScoreClass="", awayScoreClass="";
+            let scoreText = `<span class="fw-bold">VS</span>`;
+
+            const homeResult = parseInt(game.homeResult) || 0;
+            const awayResult = parseInt(game.awayResult) || 0;
+
+            if(isEnd || isPlay){
+                if(homeResult > awayResult){
+                    homeScoreClass="win-score-today";
+                    awayScoreClass="lose-score-today";
+                } else if(homeResult < awayResult){
+                    homeScoreClass="lose-score-today";
+                    awayScoreClass="win-score-today";
+                } else {
+                    homeScoreClass="lose-score-today";
+                    awayScoreClass="lose-score-today";
+                }
+                scoreText = `<span class="${homeScoreClass}">${homeResult}</span><span class="score-dash">-</span><span class="${awayScoreClass}">${awayResult}</span>`;
+            }
+
+            return `<div class="today-card">
+<div class="mb-1">${formatDate(game.startDate)} ${formatTime(game.startTime)}</div>
+<div class="d-flex justify-content-center align-items-center mb-1">
+<div class="text-center me-2">
+<img src="${game.homeTeamImageUrl??defaultLogo}" class="team-logo">
+<div class="homename">${game.homeTeamName??"홈팀"}</div>
+<div class="pitcher">${game.homeStartPitcher??""}</div>
+</div>
+<div class="fw-bold mx-1 today-score-text">
+    ${scoreText}
+</div>
+<div class="text-center ms-2">
+<img src="${game.awayTeamImageUrl??defaultLogo}" class="team-logo">
+<div class="homename">${game.awayTeamName??"원정팀"}</div>
+<div class="pitcher">${game.awayStartPitcher??""}</div>
+</div>
+</div>
+<div class="text-muted mb-0">${game.fieldName??"구장"} · <span class="status ${getStatusClass(game.gameStatus)}">${getGameStatus(game.gameStatus)}</span></div>
+</div>`;
+        }).join('');
+        updateButtons();
+    }
+    
+    function scrollToday(direction){ const slider=document.getElementById("todaySlider"); const cardWidth=192; slider.scrollBy({left:direction*cardWidth,behavior:'smooth'}); setTimeout(updateButtons,300); }
+    function updateButtons(){ const slider=document.getElementById("todaySlider"); document.querySelector(".slider-btn.left").disabled=slider.scrollLeft<=0; document.querySelector(".slider-btn.right").disabled=slider.scrollLeft+slider.clientWidth>=slider.scrollWidth-1; }
+    document.getElementById("todaySlider").addEventListener('scroll',updateButtons); 
+
+    // 필터링
+    function filterGamesAndRender() {
+        const showUpcoming = document.getElementById("showUpcomingGames").checked;
+
+        if (showUpcoming) {
+            currentFilteredGames = [...allGames];
+        } else {
+            currentFilteredGames = allGames.filter(game => game.gameStatus !== "BEFORE");
+        }
+
+        renderPage(1);
+    }
+
+    // 체크박스 로컬스토리지
+    function setupCheckbox() {
+        const checkbox = document.getElementById("showUpcomingGames");
+        const storedState = localStorage.getItem('showUpcomingGames');
+
+        if (storedState !== null) {
+            checkbox.checked = JSON.parse(storedState);
+        } else {
+
+            checkbox.checked = false;
+        }
+
+        checkbox.addEventListener('change', (event) => {
+            localStorage.setItem('showUpcomingGames', event.target.checked);
+            filterGamesAndRender();
+        });
+    }
+
+    function loadSchedule(){
+        const monthValue=document.getElementById("monthPicker").value;
+        if(!monthValue) return;
+        const [year,month]=monthValue.split("-");
+        fetch(`/baseball/data?month=${year}${month}`)
+            .then(res=>res.json())
+            .then(data=>{
+                const schedule=data.schedule??{};
+                allGames=Object.values(schedule).flat().sort((a,b)=>{const dateA=a.startDate+a.startTime; const dateB=b.startDate+b.startTime; return dateB.localeCompare(dateA);});
+                
+                
+                renderTodayCards();
+                filterGamesAndRender();
+            })
+            .catch(err=>{ console.error("API 오류:",err); document.getElementById("scheduleBody").innerHTML=`<tr><td colspan="7" class="text-center text-danger">데이터 로딩 실패</td></tr>`; document.getElementById("todaySlider").innerHTML=`<div class="text-center p-2 text-danger w-100">오늘 경기 로딩 실패</div>`; });
+    }
+
+
+    window.onload = function() {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = (today.getMonth() + 1).toString().padStart(2, '0');
+        document.getElementById("monthPicker").value = `${year}-${month}`;
+
+        setupCheckbox();
+        loadSchedule();
+    };
+</script>
+	</div>
+</body>
+</html>

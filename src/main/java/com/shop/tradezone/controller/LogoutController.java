@@ -16,7 +16,7 @@ public class LogoutController {
 	@Value("${kakao.logout_redirect_uri}")
 	private String kakaoLogoutRedirectUri;
 
-	@GetMapping("/member/logout")
+	@GetMapping("/logout")
 	public String logout(HttpServletRequest request) {
 		HttpSession session = request.getSession(false);
 		if (session == null)
