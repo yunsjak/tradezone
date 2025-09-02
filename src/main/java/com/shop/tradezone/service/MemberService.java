@@ -76,20 +76,6 @@ public class MemberService {
 		return new MemberUpdateDto(member);
 	}
 
-	public MemberUpdateDto findByEmailAndPhone(String email, String phone) {
-
-		Member member = memberRepository.findByEmailAndPhone(email, phone);
-		MemberUpdateDto dto = new MemberUpdateDto();
-
-		dto.setEmail(member.getEmail());
-		dto.setPhone(member.getPhone());
-
-		log.info(dto.getEmail());
-		log.info(dto.getPhone());
-
-		return dto;
-	}
-
 	// 회원정보 수정
 	public void modify(MemberUpdateDto dto, String email) {
 
@@ -127,8 +113,24 @@ public class MemberService {
 		return dto;
 	}
 
-	// 구글 이메일 전송
+	// 이메일 인증 회원 조회
+	public MemberUpdateDto findByEmailAndPhone(String email, String phone) {
+
+		Member member = memberRepository.findByEmailAndPhone(email, phone);
+		MemberUpdateDto dto = new MemberUpdateDto();
+
+		dto.setEmail(member.getEmail());
+		dto.setPhone(member.getPhone());
+
+		log.info(dto.getEmail());
+		log.info(dto.getPhone());
+
+		return dto;
+	}
+
+	// 구글 SMTP
 	private JavaMailSender getHardcodedMailSender() {
+		// JavaMailSender → Spring에서 메일 전송을 구현하는 인터페이스
 
 		JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
 		// JavaMailSenderImpl → Spring에서 메일 전송을 구현하는 클래스
@@ -148,7 +150,7 @@ public class MemberService {
 		return mailSender;
 	}
 
-	// 인증 코드 메일
+	// 인증 코드 생성
 	@Async // @Async → 특정 함수(또는 메소드)를 비동기적으로 실행하게 만드는 어노테이션
 	public void sendVerificationCode(String email, String verificationCode) {
 
@@ -164,7 +166,7 @@ public class MemberService {
 				</html>
 				""", verificationCode);
 
-		email = "yunsujung0722@gmail.com"; // 테스트 하려면 받을 수 있는 이메일 선언해야 됨
+		email = "pdw05027@gmail.com"; // 테스트 하려면 받을 수 있는 이메일 선언해야 됨
 
 		try {
 			sendEmail(email, subject, content);

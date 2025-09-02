@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -199,7 +200,9 @@ public class MemberController {
 	// 인증번호 확인
 	@ResponseBody
 	@PostMapping("/passwordcode")
-	public ResponseEntity<?> verifyCode(@RequestParam String verificationCode) {
+	public ResponseEntity<?> verifyCode(
+			@RequestParam(value = "verificationCode", required = false) String verificationCode,
+			HttpServletRequest request) {
 		try {
 			HttpSession session = request.getSession();
 
@@ -214,7 +217,8 @@ public class MemberController {
 		} catch (Exception e) {
 			log.error("인증번호 확인 중 오류 발생: ", e);
 
-			return ResponseEntity.ok(Map.of("success", false, "message", "인증번호 확인 중 오류가 발생했습니다."));
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("success", false, "message", "인증번호 확인 중 오류가 발생했습니다."));
 		}
 	}
 

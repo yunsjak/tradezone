@@ -24,8 +24,13 @@ public class SecurityConfig {
 				// URL 별 권한 설정
 				.authorizeHttpRequests(auth -> auth
 						.requestMatchers("/", "/member/join", "/member/check-username", "/member/login",
+<<<<<<< Updated upstream
 								"/member/updateidentity", "/member/resetpassword", "/**", "/notice/**", "/css/**",
 								"/js/**", "/images/**", "/api/items/main", "/callback", "/member/passwordcode", "/**")
+=======
+								"/member/updateidentity", "/member/resetpassword", "/member/passwordcode", "/notice/**",
+								"/css/**", "/js/**", "/images/**", "/api/items/main", "/callback", "/reviews/**")
+>>>>>>> Stashed changes
 						.permitAll().requestMatchers("/admin/**").hasRole("ADMIN")
 						.requestMatchers("/member/**", "/register/**", "/chat/**", "/callback", "/items/**",
 								"/reviews/**")
